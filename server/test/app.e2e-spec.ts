@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { ConfigService } from '@nestjs/config';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -10,7 +11,19 @@ describe('AppController (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+    .overrideProvider(ConfigService)
+    .useValue({
+      get: (key: string, defaultValue?: any) => {
+        const config = {
+          DB_TYPE: 'sqlite',
+          DB_DATABASE: ':memory:',
+          DB_SYNC: true,
+        };
+        return config[key] ?? defaultValue;
+      },
+    })
+    .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

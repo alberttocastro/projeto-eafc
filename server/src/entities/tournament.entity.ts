@@ -22,14 +22,14 @@ export class Tournament {
   name: string;
 
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: TournamentStatus,
     default: TournamentStatus.PLANNED,
   })
   status: TournamentStatus;
 
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: TournamentType,
     default: TournamentType.LEAGUE,
   })

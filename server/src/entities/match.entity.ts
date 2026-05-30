@@ -29,7 +29,7 @@ export class Match {
   awayScore: number;
 
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: MatchStatus,
     default: MatchStatus.SCHEDULED,
   })

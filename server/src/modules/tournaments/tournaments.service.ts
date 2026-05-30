@@ -34,7 +34,38 @@ export class TournamentsService {
     return this.tournamentsRepository.save(tournament);
   }
 
-  // ... (findAll and findOne remain same)
+  findAll(): Promise<Tournament[]> {
+    return this.tournamentsRepository.find({ relations: ['matches', 'participants', 'participants.player'] });
+  }
+
+  findOne(id: number): Promise<Tournament> {
+    return this.tournamentsRepository.findOne({
+      where: { id },
+      relations: ['matches', 'matches.homePlayer', 'matches.awayPlayer', 'participants', 'participants.player'],
+    });
+  }
+
+  async updateStatus(id: number, status: TournamentStatus): Promise<Tournament> {
+    await this.tournamentsRepository.update(id, { status });
+    return this.findOne(id);
+  }
+
+  async addParticipant(tournamentId: number, playerId: number, clubName: string): Promise<TournamentParticipant> {
+    const tournament = await this.tournamentsRepository.findOneBy({ id: tournamentId });
+    const player = await this.playersRepository.findOneBy({ id: playerId });
+
+    if (!tournament || !player) {
+      throw new NotFoundException('Tournament or Player not found');
+    }
+
+    const participant = this.participantsRepository.create({
+      tournament,
+      player,
+      clubName,
+    });
+
+    return this.participantsRepository.save(participant);
+  }
 
   async generateSchedule(tournamentId: number): Promise<Match[]> {
     const tournament = await this.tournamentsRepository.findOne({
@@ -92,6 +123,17 @@ export class TournamentsService {
     return this.matchesRepository.save(matches);
   }
 
+  private createMatchObj(tournament: Tournament, home: Player, away: Player, group?: string, round?: string): Match {
+    return this.matchesRepository.create({
+      tournament,
+      homePlayer: home,
+      awayPlayer: away,
+      status: MatchStatus.SCHEDULED,
+      groupName: group,
+      round: round,
+    });
+  }
+
   async getStandings(tournamentId: number) {
     const tournament = await this.tournamentsRepository.findOne({
       where: { id: tournamentId },
@@ -106,7 +148,7 @@ export class TournamentsService {
       playerId: p.player.id,
       playerName: p.player.name,
       clubName: p.clubName,
-      groupName: p.tournament.type === TournamentType.CUP ? this.getParticipantGroup(p, tournament.matches) : null,
+      groupName: tournament.type === TournamentType.CUP ? this.getParticipantGroup(p, tournament.matches) : null,
       played: 0,
       won: 0,
       drawn: 0,
@@ -175,3 +217,4 @@ export class TournamentsService {
     );
     return match ? match.groupName : null;
   }
+}

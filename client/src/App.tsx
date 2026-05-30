@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { playersApi, tournamentsApi } from './api';
 import { Trophy, Users, Plus, PlayCircle } from 'lucide-react';
 import TournamentDetails from './components/TournamentDetails';

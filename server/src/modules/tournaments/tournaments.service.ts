@@ -38,14 +38,14 @@ export class TournamentsService {
     return this.tournamentsRepository.find({ relations: ['matches', 'participants', 'participants.player'] });
   }
 
-  findOne(id: number): Promise<Tournament> {
+  findOne(id: number): Promise<Tournament | null> {
     return this.tournamentsRepository.findOne({
       where: { id },
       relations: ['matches', 'matches.homePlayer', 'matches.awayPlayer', 'participants', 'participants.player'],
     });
   }
 
-  async updateStatus(id: number, status: TournamentStatus): Promise<Tournament> {
+  async updateStatus(id: number, status: TournamentStatus): Promise<Tournament | null> {
     await this.tournamentsRepository.update(id, { status });
     return this.findOne(id);
   }
@@ -193,13 +193,13 @@ export class TournamentsService {
     });
 
     // Sort function: Points > GD > GF
-    const sortFn = (a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor;
+    const sortFn = (a: any, b: any) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor;
 
     if (tournament.type === TournamentType.LEAGUE) {
       return stats.sort(sortFn);
     } else {
       // Grouped standings for Cup
-      const groups = {};
+      const groups: Record<string, any[]> = {};
       stats.forEach((s) => {
         const g = s.groupName || 'Unassigned';
         if (!groups[g]) groups[g] = [];

@@ -19,7 +19,7 @@ export class PlayersService {
     return this.playersRepository.find();
   }
 
-  findOne(id: number): Promise<Player> {
+  findOne(id: number): Promise<Player | null> {
     return this.playersRepository.findOneBy({ id });
   }
 }

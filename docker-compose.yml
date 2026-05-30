@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: eafc-db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-eafc_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  server:
+    image: node:20-alpine
+    container_name: eafc-server
+    working_dir: /app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_DATABASE=${DB_DATABASE:-eafc_db}
+      - DB_SYNC=true
+      - DB_TYPE=postgres
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run start:dev"
+
+  client:
+    image: node:20-alpine
+    container_name: eafc-client
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./client:/app
+      # This ensures node_modules inside the container are not overwritten by the host if they don't exist
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  postgres_data:

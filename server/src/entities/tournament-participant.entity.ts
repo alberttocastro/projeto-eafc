@@ -15,4 +15,7 @@ export class TournamentParticipant {
 
   @Column()
   clubName: string;
+
+  @Column({ nullable: true })
+  groupName: string; // "A", "B", etc.
 }

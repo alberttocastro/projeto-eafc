@@ -50,21 +50,71 @@ export class TournamentsService {
     return this.findOne(id);
   }
 
-  async addParticipant(tournamentId: number, playerId: number, clubName: string): Promise<TournamentParticipant> {
-    const tournament = await this.tournamentsRepository.findOneBy({ id: tournamentId });
+  async addParticipant(tournamentId: number, playerId: number, clubName: string, groupName?: string): Promise<TournamentParticipant> {
+    const tournament = await this.tournamentsRepository.findOne({
+      where: { id: tournamentId },
+      relations: ['participants', 'participants.player'],
+    });
     const player = await this.playersRepository.findOneBy({ id: playerId });
 
     if (!tournament || !player) {
       throw new NotFoundException('Tournament or Player not found');
     }
 
+    const isAlreadyParticipant = tournament.participants.some(p => p.player.id === playerId);
+    if (isAlreadyParticipant) {
+      throw new BadRequestException('Player is already a participant in this tournament');
+    }
+
     const participant = this.participantsRepository.create({
       tournament,
       player,
       clubName,
+      groupName,
     });
 
     return this.participantsRepository.save(participant);
+  }
+
+  async updateParticipant(participantId: number, data: { clubName?: string, groupName?: string }): Promise<TournamentParticipant> {
+    const participant = await this.participantsRepository.findOneBy({ id: participantId });
+    if (!participant) throw new NotFoundException('Participant not found');
+    
+    Object.assign(participant, data);
+    return this.participantsRepository.save(participant);
+  }
+
+  async removeParticipant(participantId: number): Promise<void> {
+    await this.participantsRepository.delete(participantId);
+  }
+
+  async autoAssignGroups(tournamentId: number): Promise<void> {
+    const tournament = await this.tournamentsRepository.findOne({
+      where: { id: tournamentId },
+      relations: ['participants', 'participants.player'],
+    });
+    if (!tournament) throw new NotFoundException('Tournament not found');
+    if (tournament.type !== TournamentType.CUP) throw new BadRequestException('Auto-assign only available for Cups');
+
+    const { groupCount, playersPerGroup } = tournament;
+    const participants = tournament.participants;
+
+    // Filter unassigned players
+    const unassigned = participants.filter(p => !p.groupName);
+    
+    for (let g = 0; g < groupCount; g++) {
+      const groupName = String.fromCharCode(65 + g);
+      const groupCountNow = participants.filter(p => p.groupName === groupName).length;
+      const spotsLeft = playersPerGroup - groupCountNow;
+
+      for (let i = 0; i < spotsLeft && unassigned.length > 0; i++) {
+        const p = unassigned.shift();
+        if (p) {
+          p.groupName = groupName;
+          await this.participantsRepository.save(p);
+        }
+      }
+    }
   }
 
   async generateSchedule(tournamentId: number): Promise<Match[]> {
@@ -99,17 +149,26 @@ export class TournamentsService {
   }
 
   private async generateCupGroupSchedule(tournament: Tournament): Promise<Match[]> {
-    const participants = [...tournament.participants].sort(() => Math.random() - 0.5); // Random seed
+    const participants = tournament.participants;
     const { groupCount, playersPerGroup } = tournament;
 
     if (participants.length !== groupCount * playersPerGroup) {
       throw new BadRequestException(`Expected ${groupCount * playersPerGroup} players, but got ${participants.length}`);
     }
 
+    // Ensure everyone has a group
+    if (participants.some(p => !p.groupName)) {
+      throw new BadRequestException('All participants must be assigned to a group before generating the schedule');
+    }
+
     const matches: Match[] = [];
     for (let g = 0; g < groupCount; g++) {
-      const groupName = String.fromCharCode(65 + g); // A, B, C...
-      const groupPlayers = participants.slice(g * playersPerGroup, (g + 1) * playersPerGroup);
+      const groupName = String.fromCharCode(65 + g);
+      const groupPlayers = participants.filter(p => p.groupName === groupName);
+
+      if (groupPlayers.length !== playersPerGroup) {
+        throw new BadRequestException(`Group ${groupName} must have exactly ${playersPerGroup} players`);
+      }
 
       for (let i = 0; i < groupPlayers.length; i++) {
         for (let j = i + 1; j < groupPlayers.length; j++) {
@@ -148,7 +207,7 @@ export class TournamentsService {
       playerId: p.player.id,
       playerName: p.player.name,
       clubName: p.clubName,
-      groupName: tournament.type === TournamentType.CUP ? this.getParticipantGroup(p, tournament.matches) : null,
+      groupName: tournament.type === TournamentType.CUP ? (p.groupName || 'Unassigned') : null,
       played: 0,
       won: 0,
       drawn: 0,
@@ -208,13 +267,5 @@ export class TournamentsService {
       Object.keys(groups).forEach((g) => groups[g].sort(sortFn));
       return groups;
     }
-  }
-
-  private getParticipantGroup(participant: TournamentParticipant, matches: Match[]): string | null {
-    // Find a match where this player participated to identify their group
-    const match = matches.find(
-      (m) => (m.homePlayer.id === participant.player.id || m.awayPlayer.id === participant.player.id) && m.groupName,
-    );
-    return match ? match.groupName : null;
   }
 }

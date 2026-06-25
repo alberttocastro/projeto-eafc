@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
 import { TournamentsService } from './tournaments.service';
 import { TournamentStatus, TournamentType } from '../../entities/tournament.entity';
 
@@ -36,8 +36,27 @@ export class TournamentsController {
     @Param('id') id: string,
     @Body('playerId') playerId: number,
     @Body('clubName') clubName: string,
+    @Body('groupName') groupName?: string,
   ) {
-    return this.tournamentsService.addParticipant(+id, playerId, clubName);
+    return this.tournamentsService.addParticipant(+id, playerId, clubName, groupName);
+  }
+
+  @Patch('participants/:participantId')
+  updateParticipant(
+    @Param('participantId') participantId: string,
+    @Body() data: { clubName?: string, groupName?: string },
+  ) {
+    return this.tournamentsService.updateParticipant(+participantId, data);
+  }
+
+  @Delete('participants/:participantId')
+  removeParticipant(@Param('participantId') participantId: string) {
+    return this.tournamentsService.removeParticipant(+participantId);
+  }
+
+  @Post(':id/auto-assign-groups')
+  autoAssignGroups(@Param('id') id: string) {
+    return this.tournamentsService.autoAssignGroups(+id);
   }
 
   @Post(':id/generate-schedule')

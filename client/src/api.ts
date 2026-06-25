@@ -13,8 +13,14 @@ export const tournamentsApi = {
   list: () => api.get('/tournaments'),
   get: (id: number) => api.get(`/tournaments/${id}`),
   create: (data: any) => api.post('/tournaments', data),
-  addParticipant: (id: number, data: { playerId: number; clubName: string }) => 
+  addParticipant: (id: number, data: { playerId: number; clubName: string; groupName?: string }) => 
     api.post(`/tournaments/${id}/participants`, data),
+  updateParticipant: (participantId: number, data: { clubName?: string; groupName?: string }) =>
+    api.patch(`/tournaments/participants/${participantId}`, data),
+  removeParticipant: (participantId: number) =>
+    api.delete(`/tournaments/participants/${participantId}`),
+  autoAssignGroups: (id: number) =>
+    api.post(`/tournaments/${id}/auto-assign-groups`),
   generateSchedule: (id: number) => api.post(`/tournaments/${id}/generate-schedule`),
   getStandings: (id: number) => api.get(`/tournaments/${id}/standings`),
 };

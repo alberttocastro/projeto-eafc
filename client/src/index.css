@@ -1,80 +1,28 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-}
-
 body {
   margin: 0;
-  display: flex;
-  min-width: 320px;
+  padding: 0;
   min-height: 100vh;
+  background-color: #121212;
 }
 
 #root {
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
 }
 
-.card {
-  background: #1a1a1a;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid #333;
+/* Custom scrollbar for a more "app" feel */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
 }
 
-input, select, button {
-  padding: 0.6rem 1rem;
+::-webkit-scrollbar-thumb {
+  background: #333;
   border-radius: 4px;
-  border: 1px solid #444;
-  background: #2a2a2a;
-  color: white;
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
-button {
-  cursor: pointer;
-  background: #646cff;
-  border: none;
-  font-weight: bold;
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }
-
-button:hover {
-  background: #535bf2;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-th, td {
-  text-align: left;
-  padding: 0.8rem;
-  border-bottom: 1px solid #333;
-}
-
-.status-tag {
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-}
-
-.status-planned { background: #666; }
-.status-active { background: #2e7d32; }
-.status-finished { background: #c62828; }

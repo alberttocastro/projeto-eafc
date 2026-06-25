@@ -1,8 +1,40 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { playersApi, tournamentsApi } from './api';
-import { Trophy, Users, Plus, PlayCircle } from 'lucide-react';
+import { 
+  ThemeProvider, 
+  Box, 
+  Container, 
+  Typography, 
+  Button, 
+  TextField, 
+  Select, 
+  MenuItem, 
+  FormControl, 
+  InputLabel, 
+  Checkbox, 
+  FormControlLabel, 
+  Card, 
+  CardContent, 
+  CardActions, 
+  Grid, 
+  AppBar, 
+  Toolbar, 
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Fab
+} from '@mui/material';
+import { 
+  EmojiEvents, 
+  Group, 
+  Add as AddIcon, 
+  PlayArrow as PlayIcon,
+} from '@mui/icons-material';
 import TournamentDetails from './components/TournamentDetails';
+import theme from './theme';
 
 function Dashboard() {
   const [players, setPlayers] = useState<any[]>([]);
@@ -51,109 +83,172 @@ function Dashboard() {
   };
 
   return (
-    <div>
-      <header style={{ marginBottom: '2rem' }}>
-        <h1>EAFC Tournament Manager</h1>
-      </header>
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Grid container spacing={3}>
+        {/* Players Section */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+                <Group color="primary" />
+                <Typography variant="h6">Players</Typography>
+              </Box>
+              <Box component="form" onSubmit={handleCreatePlayer} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <TextField 
+                  fullWidth
+                  size="small"
+                  value={newPlayerName} 
+                  onChange={e => setNewPlayerName(e.target.value)}
+                  placeholder="Player Name"
+                />
+                <Button variant="contained" type="submit" startIcon={<AddIcon />}>
+                  Add
+                </Button>
+              </Box>
+              <List sx={{ maxHeight: 200, overflow: 'auto' }}>
+                {players.map((p, index) => (
+                  <Box key={p.id}>
+                    <ListItem>
+                      <ListItemText primary={p.name} />
+                    </ListItem>
+                    {index < players.length - 1 && <Divider />}
+                  </Box>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      <div className="grid">
-        <div className="card">
-          <h2><Users size={20} /> Players</h2>
-          <form onSubmit={handleCreatePlayer}>
-            <input 
-              value={newPlayerName} 
-              onChange={e => setNewPlayerName(e.target.value)}
-              placeholder="Player Name"
-            />
-            <button type="submit"><Plus size={16} /> Add</button>
-          </form>
-          <ul>
-            {players.map(p => (
-              <li key={p.id} style={{ padding: '0.5rem 0' }}>{p.name}</li>
+        {/* Create Tournament Section */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+                <EmojiEvents color="primary" />
+                <Typography variant="h6">New Tournament</Typography>
+              </Box>
+              <Box component="form" onSubmit={handleCreateTournament} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField 
+                  fullWidth
+                  size="small"
+                  label="Tournament Name"
+                  value={newTournament.name}
+                  onChange={e => setNewTournament({...newTournament, name: e.target.value})}
+                />
+                <FormControl fullWidth size="small">
+                  <InputLabel>Type</InputLabel>
+                  <Select 
+                    label="Type"
+                    value={newTournament.type}
+                    onChange={e => setNewTournament({...newTournament, type: e.target.value})}
+                  >
+                    <MenuItem value="league">League</MenuItem>
+                    <MenuItem value="cup">Cup</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                {newTournament.type === 'cup' && (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <TextField 
+                      fullWidth
+                      size="small"
+                      type="number" 
+                      label="Groups" 
+                      value={newTournament.cupConfig.groupCount}
+                      onChange={e => setNewTournament({
+                        ...newTournament, 
+                        cupConfig: {...newTournament.cupConfig, groupCount: Number(e.target.value)}
+                      })}
+                    />
+                    <TextField 
+                      fullWidth
+                      size="small"
+                      type="number" 
+                      label="Per Group" 
+                      value={newTournament.cupConfig.playersPerGroup}
+                      onChange={e => setNewTournament({
+                        ...newTournament, 
+                        cupConfig: {...newTournament.cupConfig, playersPerGroup: Number(e.target.value)}
+                      })}
+                    />
+                  </Box>
+                )}
+
+                <FormControlLabel
+                  control={
+                    <Checkbox 
+                      checked={newTournament.isDoubleRound}
+                      onChange={e => setNewTournament({...newTournament, isDoubleRound: e.target.checked})}
+                    />
+                  }
+                  label="Double Round"
+                />
+                <Button variant="contained" type="submit" fullWidth startIcon={<AddIcon />}>
+                  Create Tournament
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Tournaments List Section */}
+        <Grid item xs={12}>
+          <Typography variant="h5" sx={{ mb: 2, mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <EmojiEvents color="primary" /> All Tournaments
+          </Typography>
+          <Grid container spacing={2}>
+            {tournaments.map(t => (
+              <Grid item xs={12} sm={6} key={t.id}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6">{t.name}</Typography>
+                    <Typography color="textSecondary" variant="body2" sx={{ textTransform: 'capitalize' }}>
+                      {t.type} • {t.status}
+                    </Typography>
+                  </CardContent>
+                  <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      startIcon={<PlayIcon />}
+                      onClick={() => navigate(`/tournament/${t.id}`)}
+                    >
+                      Open
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
             ))}
-          </ul>
-        </div>
-
-        <div className="card">
-          <h2><Trophy size={20} /> New Tournament</h2>
-          <form onSubmit={handleCreateTournament}>
-            <input 
-              value={newTournament.name}
-              onChange={e => setNewTournament({...newTournament, name: e.target.value})}
-              placeholder="Tournament Name"
-            />
-            <select 
-              value={newTournament.type}
-              onChange={e => setNewTournament({...newTournament, type: e.target.value})}
-            >
-              <option value="league">League</option>
-              <option value="cup">Cup</option>
-            </select>
-            
-            {newTournament.type === 'cup' && (
-              <div style={{ marginTop: '0.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <input 
-                  type="number" 
-                  placeholder="Groups" 
-                  value={newTournament.cupConfig.groupCount}
-                  onChange={e => setNewTournament({
-                    ...newTournament, 
-                    cupConfig: {...newTournament.cupConfig, groupCount: Number(e.target.value)}
-                  })}
-                />
-                <input 
-                  type="number" 
-                  placeholder="Per Group" 
-                  value={newTournament.cupConfig.playersPerGroup}
-                  onChange={e => setNewTournament({
-                    ...newTournament, 
-                    cupConfig: {...newTournament.cupConfig, playersPerGroup: Number(e.target.value)}
-                  })}
-                />
-              </div>
-            )}
-
-            <label style={{ display: 'block', margin: '0.5rem 0' }}>
-              <input 
-                type="checkbox"
-                checked={newTournament.isDoubleRound}
-                onChange={e => setNewTournament({...newTournament, isDoubleRound: e.target.checked})}
-              /> Double Round
-            </label>
-            <button type="submit"><Plus size={16} /> Create</button>
-          </form>
-        </div>
-      </div>
-
-      <div style={{ marginTop: '2rem' }}>
-        <h2>All Tournaments</h2>
-        <div className="grid">
-          {tournaments.map(t => (
-            <div key={t.id} className="card">
-              <h3>{t.name}</h3>
-              <p>Type: <span style={{ textTransform: 'capitalize' }}>{t.type}</span></p>
-              <div className={`status-tag status-${t.status}`}>{t.status}</div>
-              <div style={{ marginTop: '1rem' }}>
-                <button onClick={() => navigate(`/tournament/${t.id}`)}>
-                  <PlayCircle size={16} /> Open
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Container>
   );
 }
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/tournament/:id" element={<TournamentDetails />} />
-      </Routes>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ flexGrow: 1, minHeight: '100vh', bgcolor: 'background.default' }}>
+        <AppBar position="static" elevation={0}>
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+              EAFC Manager
+            </Typography>
+            <IconButton color="inherit">
+              <EmojiEvents />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+        
+        <Router>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/tournament/:id" element={<TournamentDetails />} />
+          </Routes>
+        </Router>
+      </Box>
+    </ThemeProvider>
   );
 }
 

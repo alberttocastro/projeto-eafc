@@ -147,7 +147,7 @@ function Dashboard() {
     setAuthLoading(true);
 
     try {
-      // Simulação temporária de providerId para preparar a integração de OAuth real.
+      // Simulação temporária e insegura: substituir por providerId real retornado pelo OAuth.
       const providerId = `${provider}-${authEmail.toLowerCase()}`;
 
       const response =

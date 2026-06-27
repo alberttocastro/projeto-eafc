@@ -34,6 +34,8 @@ type SessionUser = {
 
 @Injectable()
 export class AuthService {
+  private readonly fallbackTokenSecret = randomBytes(64).toString('hex');
+
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
@@ -306,10 +308,7 @@ export class AuthService {
   }
 
   private generateToken(user: User) {
-    const secret = this.configService.get<string>(
-      'AUTH_TOKEN_SECRET',
-      'dev-auth-secret-change-me',
-    );
+    const secret = this.getTokenSecret();
     const ttlHours = Number(
       this.configService.get<string>('AUTH_TOKEN_TTL_HOURS', '24'),
     );
@@ -339,10 +338,7 @@ export class AuthService {
       return null;
     }
 
-    const secret = this.configService.get<string>(
-      'AUTH_TOKEN_SECRET',
-      'dev-auth-secret-change-me',
-    );
+    const secret = this.getTokenSecret();
     const expectedSignature = createHmac('sha256', secret)
       .update(encodedPayload)
       .digest('base64url');
@@ -411,5 +407,12 @@ export class AuthService {
 
     const normalizedValue = value.trim();
     return normalizedValue ? normalizedValue : null;
+  }
+
+  private getTokenSecret() {
+    return (
+      this.configService.get<string>('AUTH_TOKEN_SECRET') ||
+      this.fallbackTokenSecret
+    );
   }
 }

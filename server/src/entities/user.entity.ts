@@ -4,7 +4,9 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Player } from './player.entity';
 
 @Entity()
 export class User {
@@ -26,9 +28,16 @@ export class User {
   @Column({ type: 'varchar', nullable: true, unique: true })
   microsoftId: string | null;
 
+  @Column({ default: false })
+  isAdmin: boolean;
+
+  @OneToMany(() => Player, (player) => player.user)
+  players: Player[];
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

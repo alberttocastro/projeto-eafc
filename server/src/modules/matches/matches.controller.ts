@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Param, Patch, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Get,
+  Query,
+} from '@nestjs/common';
 import { MatchesService } from './matches.service';
 import { MatchStatus } from '../../entities/match.entity';
 

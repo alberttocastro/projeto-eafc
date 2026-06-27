@@ -16,10 +16,20 @@ export class MatchesService {
     private tournamentsRepository: Repository<Tournament>,
   ) {}
 
-  async create(tournamentId: number, homePlayerId: number, awayPlayerId: number): Promise<Match> {
-    const tournament = await this.tournamentsRepository.findOneBy({ id: tournamentId });
-    const homePlayer = await this.playersRepository.findOneBy({ id: homePlayerId });
-    const awayPlayer = await this.playersRepository.findOneBy({ id: awayPlayerId });
+  async create(
+    tournamentId: number,
+    homePlayerId: number,
+    awayPlayerId: number,
+  ): Promise<Match> {
+    const tournament = await this.tournamentsRepository.findOneBy({
+      id: tournamentId,
+    });
+    const homePlayer = await this.playersRepository.findOneBy({
+      id: homePlayerId,
+    });
+    const awayPlayer = await this.playersRepository.findOneBy({
+      id: awayPlayerId,
+    });
 
     if (!tournament || !homePlayer || !awayPlayer) {
       throw new NotFoundException('Tournament or Player not found');

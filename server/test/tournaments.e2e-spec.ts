@@ -13,18 +13,18 @@ describe('Tournaments (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideProvider(ConfigService)
-    .useValue({
-      get: (key: string, defaultValue?: any) => {
-        const config = {
-          DB_TYPE: 'sqlite',
-          DB_DATABASE: ':memory:',
-          DB_SYNC: true,
-        };
-        return config[key] ?? defaultValue;
-      },
-    })
-    .compile();
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: (key: string, defaultValue?: any) => {
+          const config = {
+            DB_TYPE: 'sqlite',
+            DB_DATABASE: ':memory:',
+            DB_SYNC: true,
+          };
+          return config[key] ?? defaultValue;
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -51,7 +51,11 @@ describe('Tournaments (e2e)', () => {
     // 2. Create Tournament
     const tournamentRes = await request(app.getHttpServer())
       .post('/tournaments')
-      .send({ name: 'E2E Test League', type: TournamentType.LEAGUE, isDoubleRound: false })
+      .send({
+        name: 'E2E Test League',
+        type: TournamentType.LEAGUE,
+        isDoubleRound: false,
+      })
       .expect(201);
     const tId = tournamentRes.body.id;
 
@@ -71,7 +75,7 @@ describe('Tournaments (e2e)', () => {
       .post(`/tournaments/${tId}/generate-schedule`)
       .send()
       .expect(201);
-    
+
     expect(scheduleRes.body.length).toBe(1); // 2 players, single round = 1 match
     const matchId = scheduleRes.body[0].id;
 

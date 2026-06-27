@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Tournament, TournamentStatus, TournamentType } from '../../entities/tournament.entity';
+import {
+  Tournament,
+  TournamentStatus,
+  TournamentType,
+} from '../../entities/tournament.entity';
 import { TournamentParticipant } from '../../entities/tournament-participant.entity';
 import { Player } from '../../entities/player.entity';
 import { Match, MatchStatus } from '../../entities/match.entity';
@@ -23,7 +31,11 @@ export class TournamentsService {
     name: string,
     type: TournamentType = TournamentType.LEAGUE,
     isDoubleRound: boolean = false,
-    cupConfig?: { groupCount: number; playersPerGroup: number; playoffRounds: number },
+    cupConfig?: {
+      groupCount: number;
+      playersPerGroup: number;
+      playoffRounds: number;
+    },
   ): Promise<Tournament> {
     const tournament = this.tournamentsRepository.create({
       name,
@@ -35,23 +47,40 @@ export class TournamentsService {
   }
 
   findAll(): Promise<Tournament[]> {
-    return this.tournamentsRepository.find({ relations: ['matches', 'participants', 'participants.player'] });
+    return this.tournamentsRepository.find({
+      relations: ['matches', 'participants', 'participants.player'],
+    });
   }
 
   findOne(id: number): Promise<Tournament | null> {
     return this.tournamentsRepository.findOne({
       where: { id },
-      relations: ['matches', 'matches.homePlayer', 'matches.awayPlayer', 'participants', 'participants.player'],
+      relations: [
+        'matches',
+        'matches.homePlayer',
+        'matches.awayPlayer',
+        'participants',
+        'participants.player',
+      ],
     });
   }
 
-  async updateStatus(id: number, status: TournamentStatus): Promise<Tournament | null> {
+  async updateStatus(
+    id: number,
+    status: TournamentStatus,
+  ): Promise<Tournament | null> {
     await this.tournamentsRepository.update(id, { status });
     return this.findOne(id);
   }
 
-  async addParticipant(tournamentId: number, playerId: number, clubName: string): Promise<TournamentParticipant> {
-    const tournament = await this.tournamentsRepository.findOneBy({ id: tournamentId });
+  async addParticipant(
+    tournamentId: number,
+    playerId: number,
+    clubName: string,
+  ): Promise<TournamentParticipant> {
+    const tournament = await this.tournamentsRepository.findOneBy({
+      id: tournamentId,
+    });
     const player = await this.playersRepository.findOneBy({ id: playerId });
 
     if (!tournament || !player) {
@@ -82,40 +111,80 @@ export class TournamentsService {
     }
   }
 
-  private async generateLeagueSchedule(tournament: Tournament): Promise<Match[]> {
+  private async generateLeagueSchedule(
+    tournament: Tournament,
+  ): Promise<Match[]> {
     const participants = tournament.participants;
-    if (participants.length < 2) throw new BadRequestException('Not enough players');
-    
+    if (participants.length < 2)
+      throw new BadRequestException('Not enough players');
+
     const matches: Match[] = [];
     for (let i = 0; i < participants.length; i++) {
       for (let j = i + 1; j < participants.length; j++) {
-        matches.push(this.createMatchObj(tournament, participants[i].player, participants[j].player));
+        matches.push(
+          this.createMatchObj(
+            tournament,
+            participants[i].player,
+            participants[j].player,
+          ),
+        );
         if (tournament.isDoubleRound) {
-          matches.push(this.createMatchObj(tournament, participants[j].player, participants[i].player));
+          matches.push(
+            this.createMatchObj(
+              tournament,
+              participants[j].player,
+              participants[i].player,
+            ),
+          );
         }
       }
     }
     return this.matchesRepository.save(matches);
   }
 
-  private async generateCupGroupSchedule(tournament: Tournament): Promise<Match[]> {
-    const participants = [...tournament.participants].sort(() => Math.random() - 0.5); // Random seed
+  private async generateCupGroupSchedule(
+    tournament: Tournament,
+  ): Promise<Match[]> {
+    const participants = [...tournament.participants].sort(
+      () => Math.random() - 0.5,
+    ); // Random seed
     const { groupCount, playersPerGroup } = tournament;
 
     if (participants.length !== groupCount * playersPerGroup) {
-      throw new BadRequestException(`Expected ${groupCount * playersPerGroup} players, but got ${participants.length}`);
+      throw new BadRequestException(
+        `Expected ${groupCount * playersPerGroup} players, but got ${participants.length}`,
+      );
     }
 
     const matches: Match[] = [];
     for (let g = 0; g < groupCount; g++) {
       const groupName = String.fromCharCode(65 + g); // A, B, C...
-      const groupPlayers = participants.slice(g * playersPerGroup, (g + 1) * playersPerGroup);
+      const groupPlayers = participants.slice(
+        g * playersPerGroup,
+        (g + 1) * playersPerGroup,
+      );
 
       for (let i = 0; i < groupPlayers.length; i++) {
         for (let j = i + 1; j < groupPlayers.length; j++) {
-          matches.push(this.createMatchObj(tournament, groupPlayers[i].player, groupPlayers[j].player, groupName, 'Group'));
+          matches.push(
+            this.createMatchObj(
+              tournament,
+              groupPlayers[i].player,
+              groupPlayers[j].player,
+              groupName,
+              'Group',
+            ),
+          );
           if (tournament.isDoubleRound) {
-            matches.push(this.createMatchObj(tournament, groupPlayers[j].player, groupPlayers[i].player, groupName, 'Group'));
+            matches.push(
+              this.createMatchObj(
+                tournament,
+                groupPlayers[j].player,
+                groupPlayers[i].player,
+                groupName,
+                'Group',
+              ),
+            );
           }
         }
       }
@@ -123,7 +192,13 @@ export class TournamentsService {
     return this.matchesRepository.save(matches);
   }
 
-  private createMatchObj(tournament: Tournament, home: Player, away: Player, group?: string, round?: string): Match {
+  private createMatchObj(
+    tournament: Tournament,
+    home: Player,
+    away: Player,
+    group?: string,
+    round?: string,
+  ): Match {
     return this.matchesRepository.create({
       tournament,
       homePlayer: home,
@@ -137,18 +212,29 @@ export class TournamentsService {
   async getStandings(tournamentId: number) {
     const tournament = await this.tournamentsRepository.findOne({
       where: { id: tournamentId },
-      relations: ['participants', 'participants.player', 'matches', 'matches.homePlayer', 'matches.awayPlayer'],
+      relations: [
+        'participants',
+        'participants.player',
+        'matches',
+        'matches.homePlayer',
+        'matches.awayPlayer',
+      ],
     });
 
     if (!tournament) throw new NotFoundException('Tournament not found');
 
-    const finishedMatches = tournament.matches.filter((m) => m.status === MatchStatus.FINISHED);
+    const finishedMatches = tournament.matches.filter(
+      (m) => m.status === MatchStatus.FINISHED,
+    );
 
     const stats = tournament.participants.map((p) => ({
       playerId: p.player.id,
       playerName: p.player.name,
       clubName: p.clubName,
-      groupName: tournament.type === TournamentType.CUP ? this.getParticipantGroup(p, tournament.matches) : null,
+      groupName:
+        tournament.type === TournamentType.CUP
+          ? this.getParticipantGroup(p, tournament.matches)
+          : null,
       played: 0,
       won: 0,
       drawn: 0,
@@ -193,7 +279,10 @@ export class TournamentsService {
     });
 
     // Sort function: Points > GD > GF
-    const sortFn = (a: any, b: any) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor;
+    const sortFn = (a: any, b: any) =>
+      b.points - a.points ||
+      b.goalDifference - a.goalDifference ||
+      b.goalsFor - a.goalsFor;
 
     if (tournament.type === TournamentType.LEAGUE) {
       return stats.sort(sortFn);
@@ -210,10 +299,16 @@ export class TournamentsService {
     }
   }
 
-  private getParticipantGroup(participant: TournamentParticipant, matches: Match[]): string | null {
+  private getParticipantGroup(
+    participant: TournamentParticipant,
+    matches: Match[],
+  ): string | null {
     // Find a match where this player participated to identify their group
     const match = matches.find(
-      (m) => (m.homePlayer.id === participant.player.id || m.awayPlayer.id === participant.player.id) && m.groupName,
+      (m) =>
+        (m.homePlayer.id === participant.player.id ||
+          m.awayPlayer.id === participant.player.id) &&
+        m.groupName,
     );
     return match ? match.groupName : null;
   }

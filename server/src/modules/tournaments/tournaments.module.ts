@@ -8,7 +8,14 @@ import { TournamentsService } from './tournaments.service';
 import { TournamentsController } from './tournaments.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tournament, TournamentParticipant, Player, Match])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Tournament,
+      TournamentParticipant,
+      Player,
+      Match,
+    ]),
+  ],
   providers: [TournamentsService],
   controllers: [TournamentsController],
   exports: [TournamentsService],

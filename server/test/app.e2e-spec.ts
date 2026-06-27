@@ -12,18 +12,18 @@ describe('AppController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideProvider(ConfigService)
-    .useValue({
-      get: (key: string, defaultValue?: any) => {
-        const config = {
-          DB_TYPE: 'sqlite',
-          DB_DATABASE: ':memory:',
-          DB_SYNC: true,
-        };
-        return config[key] ?? defaultValue;
-      },
-    })
-    .compile();
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: (key: string, defaultValue?: any) => {
+          const config = {
+            DB_TYPE: 'sqlite',
+            DB_DATABASE: ':memory:',
+            DB_SYNC: true,
+          };
+          return config[key] ?? defaultValue;
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

@@ -1,6 +1,9 @@
 import { Controller, Get, Post, Body, Param, Patch } from '@nestjs/common';
 import { TournamentsService } from './tournaments.service';
-import { TournamentStatus, TournamentType } from '../../entities/tournament.entity';
+import {
+  TournamentStatus,
+  TournamentType,
+} from '../../entities/tournament.entity';
 
 @Controller('tournaments')
 export class TournamentsController {
@@ -11,7 +14,12 @@ export class TournamentsController {
     @Body('name') name: string,
     @Body('type') type: TournamentType,
     @Body('isDoubleRound') isDoubleRound: boolean,
-    @Body('cupConfig') cupConfig?: { groupCount: number; playersPerGroup: number; playoffRounds: number },
+    @Body('cupConfig')
+    cupConfig?: {
+      groupCount: number;
+      playersPerGroup: number;
+      playoffRounds: number;
+    },
   ) {
     return this.tournamentsService.create(name, type, isDoubleRound, cupConfig);
   }
@@ -27,7 +35,10 @@ export class TournamentsController {
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body('status') status: TournamentStatus) {
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: TournamentStatus,
+  ) {
     return this.tournamentsService.updateStatus(+id, status);
   }
 

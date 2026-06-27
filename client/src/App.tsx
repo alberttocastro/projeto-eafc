@@ -139,34 +139,30 @@ function Dashboard() {
   };
 
   const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
-    if (!authEmail) {
-      setAuthStatusMessage('Informe um email para simular o login social.');
-      return;
-    }
-
     setAuthLoading(true);
 
     try {
-      // Simulação temporária e insegura: substituir por providerId real retornado pelo OAuth.
-      const providerId = `${provider}-${authEmail.toLowerCase()}`;
-
       const response =
         provider === 'google'
-          ? await authApi.loginWithGoogle({
-              providerId,
-              email: authEmail,
-              displayName: authDisplayName,
-            })
-          : await authApi.loginWithMicrosoft({
-              providerId,
-              email: authEmail,
-              displayName: authDisplayName,
-            });
+          ? await authApi.getGoogleProviderUrl()
+          : await authApi.getMicrosoftProviderUrl();
 
-      saveAuthSession(response.data);
+      const providerConfig = response.data as {
+        configured: boolean;
+        loginUrl: string | null;
+      };
+
+      if (!providerConfig.configured || !providerConfig.loginUrl) {
+        setAuthStatusMessage(
+          `Login com ${provider} ainda não configurado no backend (client id/redirect URI).`,
+        );
+        return;
+      }
+
+      window.location.href = providerConfig.loginUrl;
     } catch (err) {
       console.error('Error logging in socially', err);
-      setAuthStatusMessage(`Falha ao autenticar com ${provider}.`);
+      setAuthStatusMessage(`Falha ao iniciar autenticação com ${provider}.`);
     } finally {
       setAuthLoading(false);
     }
@@ -191,7 +187,7 @@ function Dashboard() {
         </h2>
 
         <p style={{ marginTop: '0.5rem' }}>
-          O sistema continua disponível sem login; a autenticação já está preparada para email, Google e Microsoft.
+          O sistema continua disponível sem login; email já está funcional e Google/Microsoft estão prontos para configurar OAuth.
         </p>
 
         {currentUser ? (

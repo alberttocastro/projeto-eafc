@@ -10,6 +10,8 @@ import { Player } from './entities/player.entity';
 import { Tournament } from './entities/tournament.entity';
 import { Match } from './entities/match.entity';
 import { TournamentParticipant } from './entities/tournament-participant.entity';
+import { User } from './entities/user.entity';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { TournamentParticipant } from './entities/tournament-participant.entity'
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_DATABASE', 'eafc_db'),
-        entities: [Player, Tournament, Match, TournamentParticipant],
+        entities: [Player, Tournament, Match, TournamentParticipant, User],
         synchronize: configService.get<boolean>('DB_SYNC', true),
       }),
       inject: [ConfigService],
@@ -33,6 +35,7 @@ import { TournamentParticipant } from './entities/tournament-participant.entity'
     PlayersModule,
     TournamentsModule,
     MatchesModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

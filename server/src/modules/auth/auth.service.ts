@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
+import {
+  createHmac,
+  randomBytes,
+  scrypt as scryptCallback,
+  timingSafeEqual,
+} from 'crypto';
 import { promisify } from 'util';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
@@ -17,9 +22,9 @@ type SupportedSocialProvider = 'google' | 'microsoft';
 type SessionUser = {
   id: number;
   email: string;
-  displayName: string;
-  googleId: string;
-  microsoftId: string;
+  displayName: string | null;
+  googleId: string | null;
+  microsoftId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -32,11 +37,17 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async registerWithEmail(email: string, password: string, displayName?: string) {
+  async registerWithEmail(
+    email: string,
+    password: string,
+    displayName?: string,
+  ) {
     const normalizedEmail = this.normalizeEmail(email);
     this.validatePassword(password);
 
-    const existing = await this.usersRepository.findOne({ where: { email: normalizedEmail } });
+    const existing = await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
+    });
 
     if (existing) {
       throw new BadRequestException('Email já cadastrado');
@@ -56,13 +67,18 @@ export class AuthService {
 
   async loginWithEmail(email: string, password: string) {
     const normalizedEmail = this.normalizeEmail(email);
-    const user = await this.usersRepository.findOne({ where: { email: normalizedEmail } });
+    const user = await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
+    });
 
     if (!user?.passwordHash) {
       throw new UnauthorizedException('Usuário ou senha inválidos');
     }
 
-    const validPassword = await this.verifyPassword(password, user.passwordHash);
+    const validPassword = await this.verifyPassword(
+      password,
+      user.passwordHash,
+    );
 
     if (!validPassword) {
       throw new UnauthorizedException('Usuário ou senha inválidos');
@@ -86,15 +102,19 @@ export class AuthService {
 
     const idField = provider === 'google' ? 'googleId' : 'microsoftId';
 
-    const userByProvider = await this.usersRepository.findOne({
-      where: { [idField]: normalizedProviderId },
-    });
+    const userByProvider = await this.usersRepository.findOneBy(
+      idField === 'googleId'
+        ? { googleId: normalizedProviderId }
+        : { microsoftId: normalizedProviderId },
+    );
 
     if (userByProvider) {
       return this.createAuthResponse(userByProvider);
     }
 
-    const userByEmail = await this.usersRepository.findOne({ where: { email: normalizedEmail } });
+    const userByEmail = await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
+    });
 
     if (userByEmail) {
       if (idField === 'googleId') {
@@ -111,16 +131,15 @@ export class AuthService {
       return this.createAuthResponse(linkedUser);
     }
 
-    const user = await this.usersRepository.save(
-      this.usersRepository.create({
-        email: normalizedEmail,
-        displayName: displayName?.trim() || normalizedEmail,
-        googleId: provider === 'google' ? normalizedProviderId : null,
-        microsoftId: provider === 'microsoft' ? normalizedProviderId : null,
-      }),
-    );
+    const user = new User();
+    user.email = normalizedEmail;
+    user.displayName = displayName?.trim() || normalizedEmail;
+    user.googleId = provider === 'google' ? normalizedProviderId : null;
+    user.microsoftId = provider === 'microsoft' ? normalizedProviderId : null;
 
-    return this.createAuthResponse(user);
+    const savedUser = await this.usersRepository.save(user);
+
+    return this.createAuthResponse(savedUser);
   }
 
   async getSessionFromToken(authorizationHeader?: string) {
@@ -142,7 +161,9 @@ export class AuthService {
       };
     }
 
-    const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.sub },
+    });
 
     if (!user) {
       return {
@@ -184,8 +205,13 @@ export class AuthService {
 
   getMicrosoftLoginUrl() {
     const clientId = this.configService.get<string>('MICROSOFT_CLIENT_ID');
-    const redirectUri = this.configService.get<string>('MICROSOFT_REDIRECT_URI');
-    const tenantId = this.configService.get<string>('MICROSOFT_TENANT_ID', 'common');
+    const redirectUri = this.configService.get<string>(
+      'MICROSOFT_REDIRECT_URI',
+    );
+    const tenantId = this.configService.get<string>(
+      'MICROSOFT_TENANT_ID',
+      'common',
+    );
 
     if (!clientId || !redirectUri) {
       return {
@@ -195,7 +221,9 @@ export class AuthService {
       };
     }
 
-    const url = new URL(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`);
+    const url = new URL(
+      `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
+    );
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('response_type', 'code');
@@ -208,7 +236,7 @@ export class AuthService {
     };
   }
 
-  private async createAuthResponse(user: User) {
+  private createAuthResponse(user: User) {
     return {
       accessToken: this.generateToken(user),
       user: this.toSessionUser(user),
@@ -267,8 +295,13 @@ export class AuthService {
   }
 
   private generateToken(user: User) {
-    const secret = this.configService.get<string>('AUTH_TOKEN_SECRET', 'dev-auth-secret-change-me');
-    const ttlHours = Number(this.configService.get<string>('AUTH_TOKEN_TTL_HOURS', '24'));
+    const secret = this.configService.get<string>(
+      'AUTH_TOKEN_SECRET',
+      'dev-auth-secret-change-me',
+    );
+    const ttlHours = Number(
+      this.configService.get<string>('AUTH_TOKEN_TTL_HOURS', '24'),
+    );
 
     const payload = {
       sub: user.id,
@@ -276,20 +309,29 @@ export class AuthService {
       exp: Date.now() + ttlHours * 60 * 60 * 1000,
     };
 
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const signature = createHmac('sha256', secret).update(encodedPayload).digest('base64url');
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const signature = createHmac('sha256', secret)
+      .update(encodedPayload)
+      .digest('base64url');
 
     return `${encodedPayload}.${signature}`;
   }
 
-  private decodeToken(token: string): { sub: number; email: string; exp: number } | null {
+  private decodeToken(
+    token: string,
+  ): { sub: number; email: string; exp: number } | null {
     const [encodedPayload, signature] = token.split('.');
 
     if (!encodedPayload || !signature) {
       return null;
     }
 
-    const secret = this.configService.get<string>('AUTH_TOKEN_SECRET', 'dev-auth-secret-change-me');
+    const secret = this.configService.get<string>(
+      'AUTH_TOKEN_SECRET',
+      'dev-auth-secret-change-me',
+    );
     const expectedSignature = createHmac('sha256', secret)
       .update(encodedPayload)
       .digest('base64url');

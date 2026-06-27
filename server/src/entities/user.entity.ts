@@ -18,17 +18,17 @@ export class User {
   @Column()
   email: string;
 
-  @Column({ nullable: true })
-  displayName: string;
+  @Column({ type: 'text', nullable: true })
+  displayName: string | null;
 
-  @Column({ nullable: true })
-  passwordHash: string;
+  @Column({ type: 'text', nullable: true })
+  passwordHash: string | null;
 
-  @Column({ nullable: true })
-  googleId: string;
+  @Column({ type: 'text', nullable: true })
+  googleId: string | null;
 
-  @Column({ nullable: true })
-  microsoftId: string;
+  @Column({ type: 'text', nullable: true })
+  microsoftId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

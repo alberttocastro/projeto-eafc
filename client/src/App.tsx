@@ -39,7 +39,7 @@ function Dashboard() {
     }
   }, []);
 
-  const fetchData = async () => {
+  async function fetchData() {
     try {
       const [pRes, tRes] = await Promise.all([playersApi.list(), tournamentsApi.list()]);
       setPlayers(pRes.data);
@@ -47,9 +47,9 @@ function Dashboard() {
     } catch (err) {
       console.error('Error fetching data', err);
     }
-  };
+  }
 
-  const fetchSession = async () => {
+  async function fetchSession() {
     try {
       const sessionResponse = await authApi.getSession();
       const session = sessionResponse.data as { authenticated: boolean; user: SessionUser | null };
@@ -66,7 +66,7 @@ function Dashboard() {
       console.error('Error fetching session', err);
       setCurrentUser(null);
     }
-  };
+  }
 
   const handleCreatePlayer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,9 +88,9 @@ function Dashboard() {
     fetchData();
   };
 
-  const saveAuthSession = (responseData: any) => {
-    const token = responseData?.accessToken as string | undefined;
-    const user = responseData?.user as SessionUser | undefined;
+  const saveAuthSession = (responseData: { accessToken?: string; user?: SessionUser }) => {
+    const token = responseData.accessToken;
+    const user = responseData.user;
 
     if (!token || !user) {
       throw new Error('Sessão inválida retornada pelo servidor');

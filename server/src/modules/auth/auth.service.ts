@@ -317,7 +317,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      exp: Date.now() + ttlHours * 60 * 60 * 1000,
+      exp: Math.floor(Date.now() / 1000) + ttlHours * 60 * 60,
     };
 
     const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
@@ -360,7 +360,9 @@ export class AuthService {
         exp: number;
       };
 
-      if (!payload.sub || !payload.exp || payload.exp < Date.now()) {
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+
+      if (!payload.sub || !payload.exp || payload.exp < nowInSeconds) {
         return null;
       }
 

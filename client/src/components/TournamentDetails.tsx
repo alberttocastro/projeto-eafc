@@ -71,7 +71,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-export default function TournamentDetails() {
+import type { AuthUser } from '../types/auth';
+
+interface TournamentDetailsProps {
+  currentUser: AuthUser | null;
+}
+
+export default function TournamentDetails({ currentUser }: TournamentDetailsProps) {
   const { id } = useParams<{ id: string }>();
   const [tournament, setTournament] = useState<any>(null);
   const [players, setPlayers] = useState<any[]>([]);
@@ -208,7 +214,7 @@ export default function TournamentDetails() {
                 <Chip label={tournament.status} size="small" variant="filled" />
               </Stack>
             </Box>
-            {tournament.matches.length === 0 && (
+            {tournament.matches.length === 0 && currentUser?.isAdmin && (
               <Button 
                 variant="contained" 
                 color="success" 
@@ -263,7 +269,7 @@ export default function TournamentDetails() {
                   </Grid>
                   <Grid size={4} sx={{ textAlign: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                      {m.status !== 'scheduled' && (
+                      {m.status !== 'scheduled' && currentUser?.isAdmin && (
                         <IconButton size="small" onClick={() => handleAddGoal(m.id, 'home')}>
                           <Add fontSize="small" />
                         </IconButton>
@@ -271,7 +277,7 @@ export default function TournamentDetails() {
                       <Typography variant="h5" sx={{ fontWeight: 'bold', minWidth: 60 }}>
                         {m.homeScore} - {m.awayScore}
                       </Typography>
-                      {m.status !== 'scheduled' && (
+                      {m.status !== 'scheduled' && currentUser?.isAdmin && (
                         <IconButton size="small" onClick={() => handleAddGoal(m.id, 'away')}>
                           <Add fontSize="small" />
                         </IconButton>
@@ -286,12 +292,12 @@ export default function TournamentDetails() {
                   </Grid>
                   
                   <Grid size={12} sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                    {m.status === 'scheduled' && (
+                    {m.status === 'scheduled' && currentUser?.isAdmin && (
                       <Button size="small" variant="contained" startIcon={<SportsEsports />} onClick={() => handleUpdateMatchStatus(m.id, 'in_progress')}>
                         Start
                       </Button>
                     )}
-                    {m.status === 'in_progress' && (
+                    {m.status === 'in_progress' && currentUser?.isAdmin && (
                       <Button size="small" variant="contained" color="error" startIcon={<Save />} onClick={() => handleUpdateMatchStatus(m.id, 'finished')}>
                         Finish
                       </Button>
@@ -311,68 +317,70 @@ export default function TournamentDetails() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>Add Participant</Typography>
-            {tournament.status === 'planned' ? (
-              <Box component="form" onSubmit={handleAddParticipant} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 1 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Select Player</InputLabel>
-                  <Select 
-                    label="Select Player"
-                    value={selectedPlayerId} 
-                    onChange={e => setSelectedPlayerId(e.target.value)}
-                  >
-                    {players
-                      .filter(p => !tournament.participants.some((part: any) => part.player.id === p.id))
-                      .map(p => (
-                        <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-                      ))}
-                  </Select>
-                </FormControl>
-                <Grid container spacing={2}>
-                  <Grid size={tournament.type === 'cup' ? 8 : 12}>
-                    <TextField 
-                      fullWidth 
-                      size="small" 
-                      label="Club Name"
-                      value={clubName} 
-                      onChange={e => setClubName(e.target.value)} 
-                    />
-                  </Grid>
-                  {tournament.type === 'cup' && (
-                    <Grid size={4}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Group</InputLabel>
-                        <Select 
-                          label="Group"
-                          value={groupName} 
-                          onChange={e => setGroupName(e.target.value)}
-                        >
-                          <MenuItem value=""><em>None</em></MenuItem>
-                          {groupOptions.map(g => (
-                            <MenuItem key={g} value={g}>{g}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+        {currentUser?.isAdmin && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Add Participant</Typography>
+              {tournament.status === 'planned' ? (
+                <Box component="form" onSubmit={handleAddParticipant} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 1 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Select Player</InputLabel>
+                    <Select 
+                      label="Select Player"
+                      value={selectedPlayerId} 
+                      onChange={e => setSelectedPlayerId(e.target.value)}
+                    >
+                      {players
+                        .filter(p => !tournament.participants.some((part: any) => part.player.id === p.id))
+                        .map(p => (
+                          <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
+                  <Grid container spacing={2}>
+                    <Grid size={tournament.type === 'cup' ? 8 : 12}>
+                      <TextField 
+                        fullWidth 
+                        size="small" 
+                        label="Club Name"
+                        value={clubName} 
+                        onChange={e => setClubName(e.target.value)} 
+                      />
                     </Grid>
-                  )}
-                </Grid>
-                <Button variant="contained" type="submit" startIcon={<Add />}>
-                  Add to Tournament
-                </Button>
-              </Box>
-            ) : (
-              <Typography color="textSecondary" gutterBottom>Registration closed (tournament in progress or finished).</Typography>
-            )}
-          </CardContent>
-        </Card>
+                    {tournament.type === 'cup' && (
+                      <Grid size={4}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Group</InputLabel>
+                          <Select 
+                            label="Group"
+                            value={groupName} 
+                            onChange={e => setGroupName(e.target.value)}
+                          >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            {groupOptions.map(g => (
+                              <MenuItem key={g} value={g}>{g}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    )}
+                  </Grid>
+                  <Button variant="contained" type="submit" startIcon={<Add />} >
+                    Add to Tournament
+                  </Button>
+                </Box>
+              ) : (
+                <Typography color="textSecondary" gutterBottom>Registration closed (tournament in progress or finished).</Typography>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Participants ({tournament.participants.length})</Typography>
-              {tournament.type === 'cup' && tournament.status === 'planned' && (
+              {tournament.type === 'cup' && tournament.status === 'planned' && currentUser?.isAdmin && (
                 <Button 
                   size="small" 
                   variant="outlined" 
@@ -389,7 +397,7 @@ export default function TournamentDetails() {
                 <Box key={p.id}>
                   <ListItem
                     secondaryAction={
-                      tournament.status === 'planned' && (
+                      tournament.status === 'planned' && currentUser?.isAdmin && (
                         <Stack direction="row" spacing={1}>
                           <IconButton size="small" onClick={() => { setEditingParticipant(p); setEditDialogOpen(true); }}>
                             <Edit fontSize="small" />

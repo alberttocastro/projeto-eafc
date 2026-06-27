@@ -49,11 +49,15 @@ export const authApi = {
   loginWithMicrosoft: (token: string) =>
     api.post<AuthResponse>('/auth/microsoft', { token }),
   me: () => api.get<AuthUser | null>('/auth/me'),
+  getUsers: () => api.get<any[]>('/auth/users'),
+  promoteUser: (id: number) => api.patch<any>(`/auth/users/${id}/promote`, {}),
 };
 
 export const playersApi = {
   list: () => api.get('/players'),
-  create: (name: string) => api.post('/players', { name }),
+  create: (name: string, userId?: number) => api.post('/players', { name, userId }),
+  update: (id: number, name?: string, userId?: number | null) => api.patch(`/players/${id}`, { name, userId }),
+  getMyStats: () => api.get<any>('/players/me/stats'),
 };
 
 export const tournamentsApi = {

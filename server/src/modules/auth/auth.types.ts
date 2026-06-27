@@ -4,6 +4,7 @@ export interface AuthUser {
   email: string;
   googleId?: string | null;
   microsoftId?: string | null;
+  isAdmin: boolean;
 }
 
 export interface AuthResponse {

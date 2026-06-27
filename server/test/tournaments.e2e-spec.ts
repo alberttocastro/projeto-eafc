@@ -35,15 +35,26 @@ describe('Tournaments (e2e)', () => {
   });
 
   it('should flow through a complete tournament lifecycle', async () => {
+    // 0. Register Admin User
+    const adminRegisterRes = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ name: 'Admin User', email: 'admin@eafc.com', password: 'password123' })
+      .expect(201);
+    
+    const token = adminRegisterRes.body.accessToken;
+    const authHeader = `Bearer ${token}`;
+
     // 1. Create Players
     const player1Res = await request(app.getHttpServer())
       .post('/players')
+      .set('Authorization', authHeader)
       .send({ name: 'Player 1' })
       .expect(201);
     const p1Id = player1Res.body.id;
 
     const player2Res = await request(app.getHttpServer())
       .post('/players')
+      .set('Authorization', authHeader)
       .send({ name: 'Player 2' })
       .expect(201);
     const p2Id = player2Res.body.id;
@@ -51,6 +62,7 @@ describe('Tournaments (e2e)', () => {
     // 2. Create Tournament
     const tournamentRes = await request(app.getHttpServer())
       .post('/tournaments')
+      .set('Authorization', authHeader)
       .send({ name: 'E2E Test League', type: TournamentType.LEAGUE, isDoubleRound: false })
       .expect(201);
     const tId = tournamentRes.body.id;
@@ -58,17 +70,20 @@ describe('Tournaments (e2e)', () => {
     // 3. Add Participants
     await request(app.getHttpServer())
       .post(`/tournaments/${tId}/participants`)
+      .set('Authorization', authHeader)
       .send({ playerId: p1Id, clubName: 'FC Test 1' })
       .expect(201);
 
     await request(app.getHttpServer())
       .post(`/tournaments/${tId}/participants`)
+      .set('Authorization', authHeader)
       .send({ playerId: p2Id, clubName: 'FC Test 2' })
       .expect(201);
 
     // 4. Generate Schedule
     const scheduleRes = await request(app.getHttpServer())
       .post(`/tournaments/${tId}/generate-schedule`)
+      .set('Authorization', authHeader)
       .send()
       .expect(201);
     
@@ -78,18 +93,21 @@ describe('Tournaments (e2e)', () => {
     // 5. Start Match
     await request(app.getHttpServer())
       .patch(`/matches/${matchId}/status`)
+      .set('Authorization', authHeader)
       .send({ status: 'in_progress' })
       .expect(200);
 
     // 6. Record Goals
     await request(app.getHttpServer())
       .patch(`/matches/${matchId}/goal`)
+      .set('Authorization', authHeader)
       .send({ side: 'home' })
       .expect(200);
 
     // 7. Finish Match
     await request(app.getHttpServer())
       .patch(`/matches/${matchId}/status`)
+      .set('Authorization', authHeader)
       .send({ status: 'finished' })
       .expect(200);
 

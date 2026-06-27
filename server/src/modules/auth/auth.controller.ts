@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @Controller('auth')
@@ -37,4 +38,17 @@ export class AuthController {
     // The user payload is injected from the JWT by AuthGuard
     return user;
   }
+
+  @UseGuards(AuthGuard, AdminGuard)
+  @Get('users')
+  findAllUsers() {
+    return this.authService.findAllUsers();
+  }
+
+  @UseGuards(AuthGuard, AdminGuard)
+  @Patch('users/:id/promote')
+  promoteUser(@Param('id') id: string) {
+    return this.authService.promoteUser(+id);
+  }
 }
+

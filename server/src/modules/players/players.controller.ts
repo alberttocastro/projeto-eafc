@@ -1,13 +1,33 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { PlayersService } from './players.service';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('players')
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 
+  @Get('me/stats')
+  @UseGuards(AuthGuard)
+  getMyStats(@CurrentUser() user: any) {
+    return this.playersService.getUserStats(user.sub);
+  }
+
   @Post()
-  create(@Body('name') name: string) {
-    return this.playersService.create(name);
+  @UseGuards(AuthGuard, AdminGuard)
+  create(@Body('name') name: string, @Body('userId') userId?: number) {
+    return this.playersService.create(name, userId);
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard, AdminGuard)
+  update(
+    @Param('id') id: string,
+    @Body('name') name?: string,
+    @Body('userId') userId?: number | null,
+  ) {
+    return this.playersService.update(+id, name, userId);
   }
 
   @Get()

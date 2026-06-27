@@ -7,26 +7,26 @@ export class AuthController {
 
   @Post('register/email')
   registerWithEmail(
-    @Body('email') email: string,
-    @Body('password') password: string,
-    @Body('displayName') displayName?: string,
+    @Body('email') email: unknown,
+    @Body('password') password: unknown,
+    @Body('displayName') displayName?: unknown,
   ) {
     return this.authService.registerWithEmail(email, password, displayName);
   }
 
   @Post('login/email')
   loginWithEmail(
-    @Body('email') email: string,
-    @Body('password') password: string,
+    @Body('email') email: unknown,
+    @Body('password') password: unknown,
   ) {
     return this.authService.loginWithEmail(email, password);
   }
 
   @Post('login/google')
   loginWithGoogle(
-    @Body('providerId') providerId: string,
-    @Body('email') email: string,
-    @Body('displayName') displayName?: string,
+    @Body('providerId') providerId: unknown,
+    @Body('email') email: unknown,
+    @Body('displayName') displayName?: unknown,
   ) {
     return this.authService.loginWithSocialProvider(
       'google',
@@ -38,9 +38,9 @@ export class AuthController {
 
   @Post('login/microsoft')
   loginWithMicrosoft(
-    @Body('providerId') providerId: string,
-    @Body('email') email: string,
-    @Body('displayName') displayName?: string,
+    @Body('providerId') providerId: unknown,
+    @Body('email') email: unknown,
+    @Body('displayName') displayName?: unknown,
   ) {
     return this.authService.loginWithSocialProvider(
       'microsoft',

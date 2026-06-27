@@ -16,6 +16,9 @@ import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 
 const scrypt = promisify(scryptCallback);
+const MIN_PASSWORD_LENGTH = 8;
+const PASSWORD_SALT_SIZE = 16;
+const PASSWORD_KEY_LENGTH = 64;
 
 type SupportedSocialProvider = 'google' | 'microsoft';
 
@@ -38,9 +41,9 @@ export class AuthService {
   ) {}
 
   async registerWithEmail(
-    email: string,
-    password: string,
-    displayName?: string,
+    email: unknown,
+    password: unknown,
+    displayName?: unknown,
   ) {
     const normalizedEmail = this.normalizeEmail(email);
     this.validatePassword(password);
@@ -53,11 +56,14 @@ export class AuthService {
       throw new BadRequestException('Email já cadastrado');
     }
 
-    const passwordHash = await this.hashPassword(password);
+    const passwordHash = await this.hashPassword(
+      this.requiredString(password, 'password'),
+    );
     const user = await this.usersRepository.save(
       this.usersRepository.create({
         email: normalizedEmail,
-        displayName: displayName?.trim() || normalizedEmail,
+        displayName:
+          this.normalizeOptionalString(displayName) || normalizedEmail,
         passwordHash,
       }),
     );
@@ -65,7 +71,7 @@ export class AuthService {
     return this.createAuthResponse(user);
   }
 
-  async loginWithEmail(email: string, password: string) {
+  async loginWithEmail(email: unknown, password: unknown) {
     const normalizedEmail = this.normalizeEmail(email);
     const user = await this.usersRepository.findOne({
       where: { email: normalizedEmail },
@@ -76,7 +82,7 @@ export class AuthService {
     }
 
     const validPassword = await this.verifyPassword(
-      password,
+      this.requiredString(password, 'password'),
       user.passwordHash,
     );
 
@@ -89,16 +95,12 @@ export class AuthService {
 
   async loginWithSocialProvider(
     provider: SupportedSocialProvider,
-    providerId: string,
-    email: string,
-    displayName?: string,
+    providerId: unknown,
+    email: unknown,
+    displayName?: unknown,
   ) {
     const normalizedEmail = this.normalizeEmail(email);
-    const normalizedProviderId = providerId?.trim();
-
-    if (!normalizedProviderId) {
-      throw new BadRequestException('providerId é obrigatório');
-    }
+    const normalizedProviderId = this.requiredString(providerId, 'providerId');
 
     const idField = provider === 'google' ? 'googleId' : 'microsoftId';
 
@@ -123,8 +125,10 @@ export class AuthService {
         userByEmail.microsoftId = normalizedProviderId;
       }
 
-      if (displayName?.trim()) {
-        userByEmail.displayName = displayName.trim();
+      const normalizedDisplayName = this.normalizeOptionalString(displayName);
+
+      if (normalizedDisplayName) {
+        userByEmail.displayName = normalizedDisplayName;
       }
 
       const linkedUser = await this.usersRepository.save(userByEmail);
@@ -133,7 +137,8 @@ export class AuthService {
 
     const user = new User();
     user.email = normalizedEmail;
-    user.displayName = displayName?.trim() || normalizedEmail;
+    user.displayName =
+      this.normalizeOptionalString(displayName) || normalizedEmail;
     user.googleId = provider === 'google' ? normalizedProviderId : null;
     user.microsoftId = provider === 'microsoft' ? normalizedProviderId : null;
 
@@ -255,25 +260,27 @@ export class AuthService {
     };
   }
 
-  private normalizeEmail(email: string) {
-    const normalizedEmail = email?.trim().toLowerCase();
-
-    if (!normalizedEmail) {
-      throw new BadRequestException('Email é obrigatório');
-    }
-
-    return normalizedEmail;
+  private normalizeEmail(email: unknown) {
+    return this.requiredString(email, 'email').toLowerCase();
   }
 
-  private validatePassword(password: string) {
-    if (!password || password.length < 6) {
-      throw new BadRequestException('A senha deve ter ao menos 6 caracteres');
+  private validatePassword(password: unknown) {
+    const normalizedPassword = this.requiredString(password, 'password');
+
+    if (normalizedPassword.length < MIN_PASSWORD_LENGTH) {
+      throw new BadRequestException(
+        `A senha deve ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`,
+      );
     }
   }
 
   private async hashPassword(password: string) {
-    const salt = randomBytes(16).toString('hex');
-    const hashBuffer = (await scrypt(password, salt, 64)) as Buffer;
+    const salt = randomBytes(PASSWORD_SALT_SIZE).toString('hex');
+    const hashBuffer = (await scrypt(
+      password,
+      salt,
+      PASSWORD_KEY_LENGTH,
+    )) as Buffer;
     return `${salt}:${hashBuffer.toString('hex')}`;
   }
 
@@ -284,7 +291,11 @@ export class AuthService {
       return false;
     }
 
-    const calculatedHash = (await scrypt(password, salt, 64)) as Buffer;
+    const calculatedHash = (await scrypt(
+      password,
+      salt,
+      PASSWORD_KEY_LENGTH,
+    )) as Buffer;
     const storedHashBuffer = Buffer.from(hashHex, 'hex');
 
     if (calculatedHash.length !== storedHashBuffer.length) {
@@ -371,5 +382,32 @@ export class AuthService {
     }
 
     return token;
+  }
+
+  private requiredString(value: unknown, fieldName: string) {
+    if (typeof value !== 'string') {
+      throw new BadRequestException(`${fieldName} deve ser uma string`);
+    }
+
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue) {
+      throw new BadRequestException(`${fieldName} é obrigatório`);
+    }
+
+    return normalizedValue;
+  }
+
+  private normalizeOptionalString(value?: unknown) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      throw new BadRequestException('Campo opcional deve ser string');
+    }
+
+    const normalizedValue = value.trim();
+    return normalizedValue ? normalizedValue : null;
   }
 }

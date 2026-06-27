@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -34,7 +35,9 @@ type SessionUser = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly fallbackTokenSecret = randomBytes(64).toString('hex');
+  private hasWarnedFallbackSecret = false;
 
   constructor(
     @InjectRepository(User)
@@ -358,7 +361,11 @@ export class AuthService {
 
       const nowInSeconds = Math.floor(Date.now() / 1000);
 
-      if (!payload.sub || !payload.exp || payload.exp < nowInSeconds) {
+      if (
+        typeof payload.sub !== 'number' ||
+        typeof payload.exp !== 'number' ||
+        payload.exp < nowInSeconds
+      ) {
         return null;
       }
 
@@ -410,9 +417,19 @@ export class AuthService {
   }
 
   private getTokenSecret() {
-    return (
-      this.configService.get<string>('AUTH_TOKEN_SECRET') ||
-      this.fallbackTokenSecret
-    );
+    const configuredSecret = this.configService.get<string>('AUTH_TOKEN_SECRET');
+
+    if (configuredSecret) {
+      return configuredSecret;
+    }
+
+    if (!this.hasWarnedFallbackSecret) {
+      this.logger.warn(
+        'AUTH_TOKEN_SECRET não configurado; usando secret temporário em memória.',
+      );
+      this.hasWarnedFallbackSecret = true;
+    }
+
+    return this.fallbackTokenSecret;
   }
 }

@@ -257,11 +257,11 @@ export default function TournamentDetails() {
           {tournament.matches.map((m: any) => (
             <Card key={m.id} variant="outlined">
               <CardContent sx={{ p: '16px !important' }}>
-                <Grid container alignItems="center" spacing={1}>
-                  <Grid item xs={4} textAlign="right">
+                <Grid container spacing={1} sx={{ alignItems: 'center' }}>
+                  <Grid size={4} sx={{ textAlign: 'right' }}>
                     <Typography variant="subtitle2" noWrap>{m.homePlayer.name}</Typography>
                   </Grid>
-                  <Grid item xs={4} textAlign="center">
+                  <Grid size={4} sx={{ textAlign: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                       {m.status !== 'scheduled' && (
                         <IconButton size="small" onClick={() => handleAddGoal(m.id, 'home')}>
@@ -277,15 +277,15 @@ export default function TournamentDetails() {
                         </IconButton>
                       )}
                     </Box>
-                    <Typography variant="caption" color="textSecondary" display="block">
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                       {m.round} {m.groupName ? `(Group ${m.groupName})` : ''}
                     </Typography>
                   </Grid>
-                  <Grid item xs={4} textAlign="left">
+                  <Grid size={4} sx={{ textAlign: 'left' }}>
                     <Typography variant="subtitle2" noWrap>{m.awayPlayer.name}</Typography>
                   </Grid>
                   
-                  <Grid item xs={12} sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+                  <Grid size={12} sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
                     {m.status === 'scheduled' && (
                       <Button size="small" variant="contained" startIcon={<SportsEsports />} onClick={() => handleUpdateMatchStatus(m.id, 'in_progress')}>
                         Start
@@ -305,7 +305,7 @@ export default function TournamentDetails() {
             </Card>
           ))}
           {tournament.matches.length === 0 && (
-            <Typography textAlign="center" color="textSecondary">No matches generated yet.</Typography>
+            <Typography color="textSecondary" sx={{ textAlign: 'center' }}>No matches generated yet.</Typography>
           )}
         </Stack>
       </TabPanel>
@@ -331,7 +331,7 @@ export default function TournamentDetails() {
                   </Select>
                 </FormControl>
                 <Grid container spacing={2}>
-                  <Grid item xs={tournament.type === 'cup' ? 8 : 12}>
+                  <Grid size={tournament.type === 'cup' ? 8 : 12}>
                     <TextField 
                       fullWidth 
                       size="small" 
@@ -341,7 +341,7 @@ export default function TournamentDetails() {
                     />
                   </Grid>
                   {tournament.type === 'cup' && (
-                    <Grid item xs={4}>
+                    <Grid size={4}>
                       <FormControl fullWidth size="small">
                         <InputLabel>Group</InputLabel>
                         <Select 

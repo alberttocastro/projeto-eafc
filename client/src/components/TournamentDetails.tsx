@@ -40,6 +40,7 @@ import {
   PlayArrow, 
   Save, 
   Add, 
+  Remove,
   SportsEsports,
   Leaderboard,
   History,
@@ -151,6 +152,11 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
 
   const handleAddGoal = async (matchId: number, side: 'home' | 'away') => {
     await matchesApi.addGoal(matchId, side);
+    fetchTournament();
+  };
+
+  const handleRemoveGoal = async (matchId: number, side: 'home' | 'away') => {
+    await matchesApi.removeGoal(matchId, side);
     fetchTournament();
   };
 
@@ -274,17 +280,27 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
                   <Grid size={4} sx={{ textAlign: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                       {m.status === 'in_progress' && currentUser?.isAdmin && (
-                        <IconButton size="small" onClick={() => handleAddGoal(m.id, 'home')}>
-                          <Add fontSize="small" />
-                        </IconButton>
+                        <>
+                          <IconButton size="small" onClick={() => handleRemoveGoal(m.id, 'home')} disabled={m.homeScore === 0}>
+                            <Remove fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleAddGoal(m.id, 'home')}>
+                            <Add fontSize="small" />
+                          </IconButton>
+                        </>
                       )}
                       <Typography variant="h5" sx={{ fontWeight: 'bold', minWidth: 60 }}>
                         {m.homeScore} - {m.awayScore}
                       </Typography>
                       {m.status === 'in_progress' && currentUser?.isAdmin && (
-                        <IconButton size="small" onClick={() => handleAddGoal(m.id, 'away')}>
-                          <Add fontSize="small" />
-                        </IconButton>
+                        <>
+                          <IconButton size="small" onClick={() => handleAddGoal(m.id, 'away')}>
+                            <Add fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleRemoveGoal(m.id, 'away')} disabled={m.awayScore === 0}>
+                            <Remove fontSize="small" />
+                          </IconButton>
+                        </>
                       )}
                     </Box>
                     <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>

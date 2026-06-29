@@ -78,6 +78,7 @@ export const tournamentsApi = {
 
 export const matchesApi = {
   addGoal: (id: number, side: 'home' | 'away') => api.patch(`/matches/${id}/goal`, { side }),
+  removeGoal: (id: number, side: 'home' | 'away') => api.patch(`/matches/${id}/remove-goal`, { side }),
   updateStatus: (id: number, status: string) => api.patch(`/matches/${id}/status`, { status }),
 };
 

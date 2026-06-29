@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -34,10 +35,12 @@ export class AuthService {
       throw new ConflictException('Email is already in use');
     }
 
+    const userCount = await this.usersRepository.count();
     const user = this.usersRepository.create({
       name: normalizedName,
       email: normalizedEmail,
       passwordHash: this.hashPassword(password),
+      isAdmin: userCount === 0,
     });
 
     const savedUser = await this.usersRepository.save(user);
@@ -86,11 +89,13 @@ export class AuthService {
         user.googleId = googleId;
         await this.usersRepository.save(user);
       } else {
+        const userCount = await this.usersRepository.count();
         user = this.usersRepository.create({
           email,
           name,
           googleId,
           passwordHash: null,
+          isAdmin: userCount === 0,
         });
         user = await this.usersRepository.save(user);
       }
@@ -131,11 +136,13 @@ export class AuthService {
         user.microsoftId = microsoftId;
         await this.usersRepository.save(user);
       } else {
+        const userCount = await this.usersRepository.count();
         user = this.usersRepository.create({
           email,
           name,
           microsoftId,
           passwordHash: null,
+          isAdmin: userCount === 0,
         });
         user = await this.usersRepository.save(user);
       }
@@ -208,6 +215,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       name: user.name,
+      isAdmin: user.isAdmin,
     });
 
     return {
@@ -223,7 +231,23 @@ export class AuthService {
       email: user.email,
       googleId: user.googleId,
       microsoftId: user.microsoftId,
+      isAdmin: user.isAdmin,
     };
+  }
+
+  async findAllUsers(): Promise<User[]> {
+    return this.usersRepository.find({
+      order: { name: 'ASC' },
+    });
+  }
+
+  async promoteUser(id: number): Promise<User> {
+    const user = await this.usersRepository.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.isAdmin = true;
+    return this.usersRepository.save(user);
   }
 
   private extractBearerToken(authorization?: string) {

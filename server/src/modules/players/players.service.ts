@@ -187,6 +187,7 @@ export class PlayersService {
       return {
         id: m.id,
         tournamentName: m.tournament.name,
+        tournamentId: m.tournament.id,
         homePlayerName: m.homePlayer.name,
         awayPlayerName: m.awayPlayer.name,
         homeScore: m.homeScore,

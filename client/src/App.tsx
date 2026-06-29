@@ -50,6 +50,7 @@ import {
   ManageAccounts,
   SportsSoccer,
   History,
+  CalendarToday,
 } from '@mui/icons-material';
 import TournamentDetails from './components/TournamentDetails';
 import AuthDialog from './components/AuthDialog';
@@ -85,6 +86,10 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
   });
 
   const navigate = useNavigate();
+
+  const finishedMatches = userStats?.matches?.filter((m: any) => m.status === 'finished') || [];
+  const upcomingMatches = userStats?.matches?.filter((m: any) => m.status === 'scheduled') || [];
+  const inProgressMatches = userStats?.matches?.filter((m: any) => m.status === 'in_progress') || [];
 
   useEffect(() => {
     fetchData();
@@ -256,42 +261,167 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                 </Card>
               </Grid>
 
-              {/* Tournament Participations */}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
-                      <EmojiEvents color="primary" />
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>My Tournaments</Typography>
-                    </Box>
-                    <Divider sx={{ mb: 2 }} />
-                    {userStats.tournaments.length === 0 ? (
-                      <Typography color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
-                        Not participating in any tournament yet.
-                      </Typography>
-                    ) : (
-                      <List sx={{ maxHeight: 350, overflow: 'auto' }}>
-                        {userStats.tournaments.map((t: any, idx: number) => (
-                          <Box key={t.id}>
-                            <ListItem
-                              secondaryAction={
-                                <Button size="small" variant="outlined" onClick={() => navigate(`/tournament/${t.id}`)}>
-                                  View
+              {/* Highlighted In-Progress Matches Section */}
+              {inProgressMatches.length > 0 && (
+                <Grid size={12}>
+                  <Card sx={{ 
+                    border: '2px solid',
+                    borderColor: 'error.main',
+                    boxShadow: '0 0 15px rgba(211, 47, 47, 0.2)',
+                    background: 'linear-gradient(135deg, #fff5f5 0%, #ffebeb 100%)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1.5 }}>
+                        <Box sx={{ 
+                          width: 12, 
+                          height: 12, 
+                          borderRadius: '50%', 
+                          backgroundColor: '#d32f2f',
+                          animation: 'pulse 1.5s infinite ease-in-out',
+                          '@keyframes pulse': {
+                            '0%': { transform: 'scale(0.8)', opacity: 0.5 },
+                            '50%': { transform: 'scale(1.2)', opacity: 1 },
+                            '100%': { transform: 'scale(0.8)', opacity: 0.5 },
+                          }
+                        }} />
+                        <Typography variant="h6" color="error.main" sx={{ fontWeight: 'bold' }}>
+                          Partidas em Andamento / Live Matches
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ mb: 2, borderColor: 'rgba(211, 47, 47, 0.15)' }} />
+                      <Grid container spacing={2}>
+                        {inProgressMatches.map((m: any) => (
+                          <Grid size={{ xs: 12, md: 6 }} key={m.id}>
+                            <Card variant="outlined" sx={{ 
+                              borderColor: 'error.light', 
+                              backgroundColor: 'white',
+                              transition: 'transform 0.2s',
+                              '&:hover': { transform: 'translateY(-2px)' }
+                            }}>
+                              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                <Grid container alignItems="center">
+                                  <Grid size={8}>
+                                    <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: 'medium' }}>
+                                      {m.tournamentName}
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                      {m.homePlayerName} vs {m.awayPlayerName}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid size={4} sx={{ textAlign: 'right' }}>
+                                    <Box sx={{ 
+                                      display: 'inline-flex', 
+                                      alignItems: 'center', 
+                                      backgroundColor: 'error.main', 
+                                      color: 'white', 
+                                      px: 1.5, 
+                                      py: 0.5, 
+                                      borderRadius: 1,
+                                      fontWeight: 'bold',
+                                      fontSize: '1.1rem'
+                                    }}>
+                                      {m.homeScore} - {m.awayScore}
+                                    </Box>
+                                  </Grid>
+                                </Grid>
+                              </CardContent>
+                              <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 1, pt: 0 }}>
+                                <Button 
+                                  size="small" 
+                                  variant="text" 
+                                  color="error" 
+                                  onClick={() => navigate(`/tournament/${m.tournamentId || ''}`)}
+                                  startIcon={<PlayIcon />}
+                                >
+                                  Acompanhar
                                 </Button>
-                              }
-                            >
-                              <ListItemText 
-                                primary={t.name}
-                                secondary={`Club: ${t.clubName} • Type: ${t.type} • Status: ${t.status}`}
-                              />
-                            </ListItem>
-                            {idx < userStats.tournaments.length - 1 && <Divider />}
-                          </Box>
+                              </CardActions>
+                            </Card>
+                          </Grid>
                         ))}
-                      </List>
-                    )}
-                  </CardContent>
-                </Card>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Left Column: Tournaments & Upcoming Matches */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Stack spacing={3}>
+                  {/* Tournament Participations */}
+                  <Card>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+                        <EmojiEvents color="primary" />
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>My Tournaments</Typography>
+                      </Box>
+                      <Divider sx={{ mb: 2 }} />
+                      {userStats.tournaments.length === 0 ? (
+                        <Typography color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
+                          Not participating in any tournament yet.
+                        </Typography>
+                      ) : (
+                        <List sx={{ maxHeight: 350, overflow: 'auto' }}>
+                          {userStats.tournaments.map((t: any, idx: number) => (
+                            <Box key={t.id}>
+                              <ListItem
+                                secondaryAction={
+                                  <Button size="small" variant="outlined" onClick={() => navigate(`/tournament/${t.id}`)}>
+                                    View
+                                  </Button>
+                                }
+                              >
+                                <ListItemText 
+                                  primary={t.name}
+                                  secondary={`Club: ${t.clubName} • Type: ${t.type} • Status: ${t.status}`}
+                                />
+                              </ListItem>
+                              {idx < userStats.tournaments.length - 1 && <Divider />}
+                            </Box>
+                          ))}
+                        </List>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Upcoming Matches */}
+                  <Card>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+                        <CalendarToday color="primary" />
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Próximas Partidas / Upcoming Matches</Typography>
+                      </Box>
+                      <Divider sx={{ mb: 2 }} />
+                      {upcomingMatches.length === 0 ? (
+                        <Typography color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
+                          No upcoming matches scheduled.
+                        </Typography>
+                      ) : (
+                        <List sx={{ maxHeight: 350, overflow: 'auto' }}>
+                          {upcomingMatches.map((m: any, idx: number) => (
+                            <Box key={m.id}>
+                              <ListItem
+                                secondaryAction={
+                                  <Button size="small" variant="outlined" onClick={() => navigate(`/tournament/${m.tournamentId || ''}`)}>
+                                    Play
+                                  </Button>
+                                }
+                              >
+                                <ListItemText 
+                                  primary={`${m.homePlayerName} vs ${m.awayPlayerName}`}
+                                  secondary={m.tournamentName}
+                                />
+                              </ListItem>
+                              {idx < upcomingMatches.length - 1 && <Divider />}
+                            </Box>
+                          ))}
+                        </List>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Stack>
               </Grid>
 
               {/* Match History */}
@@ -303,13 +433,13 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Match History</Typography>
                     </Box>
                     <Divider sx={{ mb: 2 }} />
-                    {userStats.matches.length === 0 ? (
+                    {finishedMatches.length === 0 ? (
                       <Typography color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
                         No matches played yet.
                       </Typography>
                     ) : (
-                      <List sx={{ maxHeight: 350, overflow: 'auto' }}>
-                        {userStats.matches.map((m: any, idx: number) => (
+                      <List sx={{ maxHeight: 730, overflow: 'auto' }}>
+                        {finishedMatches.map((m: any, idx: number) => (
                           <Box key={m.id}>
                             <ListItem>
                               <Grid container sx={{ alignItems: 'center' }}>
@@ -333,7 +463,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                                 </Grid>
                               </Grid>
                             </ListItem>
-                            {idx < userStats.matches.length - 1 && <Divider />}
+                            {idx < finishedMatches.length - 1 && <Divider />}
                           </Box>
                         ))}
                       </List>

@@ -260,7 +260,11 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
 
       <TabPanel value={tabValue} index={1}>
         <Stack spacing={2}>
-          {tournament.matches.map((m: any) => (
+          {[...tournament.matches].sort((a: any, b: any) => {
+            if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+            if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
+            return 0;
+          }).map((m: any) => (
             <Card key={m.id} variant="outlined">
               <CardContent sx={{ p: '16px !important' }}>
                 <Grid container spacing={1} sx={{ alignItems: 'center' }}>
@@ -269,7 +273,7 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
                   </Grid>
                   <Grid size={4} sx={{ textAlign: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                      {m.status !== 'scheduled' && currentUser?.isAdmin && (
+                      {m.status === 'in_progress' && currentUser?.isAdmin && (
                         <IconButton size="small" onClick={() => handleAddGoal(m.id, 'home')}>
                           <Add fontSize="small" />
                         </IconButton>
@@ -277,7 +281,7 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
                       <Typography variant="h5" sx={{ fontWeight: 'bold', minWidth: 60 }}>
                         {m.homeScore} - {m.awayScore}
                       </Typography>
-                      {m.status !== 'scheduled' && currentUser?.isAdmin && (
+                      {m.status === 'in_progress' && currentUser?.isAdmin && (
                         <IconButton size="small" onClick={() => handleAddGoal(m.id, 'away')}>
                           <Add fontSize="small" />
                         </IconButton>

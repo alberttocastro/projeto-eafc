@@ -47,6 +47,19 @@ export class MatchesService {
     return this.matchesRepository.save(match);
   }
 
+  async removeGoal(matchId: number, side: 'home' | 'away'): Promise<Match> {
+    const match = await this.matchesRepository.findOneBy({ id: matchId });
+    if (!match) throw new NotFoundException('Match not found');
+
+    if (side === 'home') {
+      match.homeScore = Math.max(0, match.homeScore - 1);
+    } else {
+      match.awayScore = Math.max(0, match.awayScore - 1);
+    }
+
+    return this.matchesRepository.save(match);
+  }
+
   async updateStatus(matchId: number, status: MatchStatus): Promise<Match> {
     const match = await this.matchesRepository.findOneBy({ id: matchId });
     if (!match) throw new NotFoundException('Match not found');

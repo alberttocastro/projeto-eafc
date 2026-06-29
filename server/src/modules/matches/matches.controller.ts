@@ -24,6 +24,12 @@ export class MatchesController {
     return this.matchesService.addGoal(+id, side);
   }
 
+  @Patch(':id/remove-goal')
+  @UseGuards(AuthGuard, AdminGuard)
+  removeGoal(@Param('id') id: string, @Body('side') side: 'home' | 'away') {
+    return this.matchesService.removeGoal(+id, side);
+  }
+
   @Patch(':id/status')
   @UseGuards(AuthGuard, AdminGuard)
   updateStatus(@Param('id') id: string, @Body('status') status: MatchStatus) {

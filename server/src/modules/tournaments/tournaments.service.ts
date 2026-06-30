@@ -50,6 +50,11 @@ export class TournamentsService {
     return this.findOne(id);
   }
 
+  async archive(id: number, isArchived: boolean): Promise<Tournament | null> {
+    await this.tournamentsRepository.update(id, { isArchived });
+    return this.findOne(id);
+  }
+
   async addParticipant(tournamentId: number, playerId: number, clubName: string, groupName?: string): Promise<TournamentParticipant> {
     const tournament = await this.tournamentsRepository.findOne({
       where: { id: tournamentId },

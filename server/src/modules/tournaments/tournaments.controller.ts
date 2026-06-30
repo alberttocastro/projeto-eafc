@@ -35,6 +35,12 @@ export class TournamentsController {
     return this.tournamentsService.updateStatus(+id, status);
   }
 
+  @Patch(':id/archive')
+  @UseGuards(AuthGuard, AdminGuard)
+  archive(@Param('id') id: string, @Body('isArchived') isArchived: boolean) {
+    return this.tournamentsService.archive(+id, isArchived);
+  }
+
   @Post(':id/participants')
   @UseGuards(AuthGuard, AdminGuard)
   addParticipant(

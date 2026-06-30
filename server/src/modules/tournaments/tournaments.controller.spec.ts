@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TournamentsController } from './tournaments.controller';
 import { TournamentsService } from './tournaments.service';
 import { TournamentStatus, TournamentType } from '../../entities/tournament.entity';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 describe('TournamentsController', () => {
   let controller: TournamentsController;
@@ -19,12 +21,17 @@ describe('TournamentsController', () => {
     autoAssignGroups: jest.fn(() => {}),
     generateSchedule: jest.fn(() => [{ id: 1 }]),
     getStandings: jest.fn(() => [{ playerId: 1, points: 3 }]),
+    archive: jest.fn((id, isArchived) => ({ id, isArchived })),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TournamentsController],
-      providers: [TournamentsService],
+      providers: [
+        TournamentsService,
+        { provide: JwtService, useValue: {} },
+        { provide: ConfigService, useValue: {} },
+      ],
     })
       .overrideProvider(TournamentsService)
       .useValue(mockTournamentsService)
@@ -53,6 +60,10 @@ describe('TournamentsController', () => {
 
   it('should update status', () => {
     expect(controller.updateStatus('1', TournamentStatus.IN_PROGRESS)).toEqual({ id: 1, status: TournamentStatus.IN_PROGRESS });
+  });
+
+  it('should archive tournament', () => {
+    expect(controller.archive('1', true)).toEqual({ id: 1, isArchived: true });
   });
 
   it('should add participant', () => {

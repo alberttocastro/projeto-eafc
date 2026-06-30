@@ -69,6 +69,15 @@ describe('TournamentsService', () => {
     });
   });
 
+  describe('archive', () => {
+    it('should archive a tournament', async () => {
+      mockTournamentsRepository.findOne.mockResolvedValueOnce({ id: 1, isArchived: true });
+      const result = await service.archive(1, true);
+      expect(mockTournamentsRepository.update).toHaveBeenCalledWith(1, { isArchived: true });
+      expect(result).toEqual({ id: 1, isArchived: true });
+    });
+  });
+
   describe('addParticipant', () => {
     it('should add a participant', async () => {
       mockTournamentsRepository.findOne.mockResolvedValueOnce({ id: 1, participants: [] });

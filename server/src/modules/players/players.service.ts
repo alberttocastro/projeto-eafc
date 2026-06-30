@@ -140,6 +140,7 @@ export class PlayersService {
         name: part.tournament.name,
         type: part.tournament.type,
         status: part.tournament.status,
+        isArchived: part.tournament.isArchived,
         clubName: part.clubName,
       });
     });

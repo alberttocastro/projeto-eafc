@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PlayersService } from './players.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Player } from '../../entities/player.entity';
+import { User } from '../../entities/user.entity';
+import { Match } from '../../entities/match.entity';
+import { TournamentParticipant } from '../../entities/tournament-participant.entity';
+import { PlayerStats } from '../../entities/player-stats.entity';
 
 describe('PlayersService', () => {
   let service: PlayersService;
@@ -11,6 +15,25 @@ describe('PlayersService', () => {
     save: jest.fn().mockImplementation((player) => Promise.resolve({ id: Date.now(), ...player })),
     find: jest.fn().mockResolvedValue([]),
     findOneBy: jest.fn().mockResolvedValue(null),
+    findOne: jest.fn(),
+  };
+
+  const mockUserRepository = {
+    findOneBy: jest.fn(),
+  };
+
+  const mockMatchRepository = {
+    find: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockTournamentParticipantRepository = {
+    find: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockPlayerStatsRepository = {
+    find: jest.fn().mockResolvedValue([]),
+    findOneBy: jest.fn().mockResolvedValue(null),
+    save: jest.fn().mockImplementation((s) => Promise.resolve(s)),
   };
 
   beforeEach(async () => {
@@ -20,6 +43,22 @@ describe('PlayersService', () => {
         {
           provide: getRepositoryToken(Player),
           useValue: mockPlayerRepository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
+        },
+        {
+          provide: getRepositoryToken(Match),
+          useValue: mockMatchRepository,
+        },
+        {
+          provide: getRepositoryToken(TournamentParticipant),
+          useValue: mockTournamentParticipantRepository,
+        },
+        {
+          provide: getRepositoryToken(PlayerStats),
+          useValue: mockPlayerStatsRepository,
         },
       ],
     }).compile();
@@ -36,8 +75,9 @@ describe('PlayersService', () => {
     expect(player).toEqual({
       id: expect.any(Number),
       name: 'Test Player',
+      user: null,
     });
-    expect(mockPlayerRepository.create).toHaveBeenCalledWith({ name: 'Test Player' });
+    expect(mockPlayerRepository.create).toHaveBeenCalledWith({ name: 'Test Player', user: null });
     expect(mockPlayerRepository.save).toHaveBeenCalled();
   });
 
@@ -49,9 +89,12 @@ describe('PlayersService', () => {
   });
 
   it('should find one player by id', async () => {
-    mockPlayerRepository.findOneBy.mockResolvedValueOnce({ id: 1, name: 'Player 1' });
+    mockPlayerRepository.findOne.mockResolvedValueOnce({ id: 1, name: 'Player 1' });
     const player = await service.findOne(1);
     expect(player).toEqual({ id: 1, name: 'Player 1' });
-    expect(mockPlayerRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+    expect(mockPlayerRepository.findOne).toHaveBeenCalledWith({
+      where: { id: 1 },
+      relations: ['user'],
+    });
   });
 });

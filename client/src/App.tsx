@@ -530,16 +530,17 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                   )}
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }} sx={{ textAlign: { xs: 'left', sm: 'right' }, mt: { xs: 2, sm: 0 } }}>
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    startIcon={<SportsSoccer />}
-                    onClick={handleRecalculateLeaderboard}
-                    disabled={leaderboardLoading}
-                  >
-                    {leaderboardLoading ? "Recalculating..." : "Recalculate Stats"}
-                  </Button>
-                </Grid>
+                  {currentUser?.isAdmin && (
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      startIcon={<SportsSoccer />}
+                      onClick={handleRecalculateLeaderboard}
+                      disabled={leaderboardLoading}
+                    >
+                      {leaderboardLoading ? "Recalculating..." : "Recalculate Stats"}
+                    </Button>
+                  )}
               </Grid>
             </CardContent>
           </Card>

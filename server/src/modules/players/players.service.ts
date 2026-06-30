@@ -5,6 +5,7 @@ import { Player } from '../../entities/player.entity';
 import { User } from '../../entities/user.entity';
 import { Match, MatchStatus } from '../../entities/match.entity';
 import { TournamentParticipant } from '../../entities/tournament-participant.entity';
+import { PlayerStats } from '../../entities/player-stats.entity';
 
 @Injectable()
 export class PlayersService {
@@ -17,6 +18,8 @@ export class PlayersService {
     private matchesRepository: Repository<Match>,
     @InjectRepository(TournamentParticipant)
     private participantsRepository: Repository<TournamentParticipant>,
+    @InjectRepository(PlayerStats)
+    private playerStatsRepository: Repository<PlayerStats>,
   ) {}
 
   async create(name: string, userId?: number): Promise<Player> {
@@ -213,5 +216,112 @@ export class PlayersService {
       tournaments: Array.from(uniqueTournamentsMap.values()),
       matches: matchesList,
     };
+  }
+
+  async calculateAndCacheStats(force = false): Promise<PlayerStats[]> {
+    const cachedStats = await this.playerStatsRepository.find({
+      order: { points: 'DESC', goalDifference: 'DESC', goalsFor: 'DESC' }
+    });
+
+    if (!force && cachedStats.length > 0) {
+      const lastUpdated = cachedStats[0].lastUpdated;
+      const hoursSinceLastUpdate = (new Date().getTime() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLastUpdate < 24) {
+        return cachedStats;
+      }
+    }
+
+    const players = await this.playersRepository.find();
+    const finishedMatches = await this.matchesRepository.find({
+      where: { status: MatchStatus.FINISHED },
+      relations: ['homePlayer', 'awayPlayer']
+    });
+
+    const statsMap = new Map<number, {
+      played: number;
+      won: number;
+      drawn: number;
+      lost: number;
+      goalsFor: number;
+      goalsAgainst: number;
+      points: number;
+    }>();
+
+    players.forEach(p => {
+      statsMap.set(p.id, {
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        points: 0
+      });
+    });
+
+    finishedMatches.forEach(m => {
+      if (!m.homePlayer || !m.awayPlayer) return;
+      
+      const homeStats = statsMap.get(m.homePlayer.id);
+      const awayStats = statsMap.get(m.awayPlayer.id);
+
+      if (homeStats) {
+        homeStats.played++;
+        homeStats.goalsFor += m.homeScore;
+        homeStats.goalsAgainst += m.awayScore;
+        if (m.homeScore > m.awayScore) {
+          homeStats.won++;
+          homeStats.points += 3;
+        } else if (m.homeScore < m.awayScore) {
+          homeStats.lost++;
+        } else {
+          homeStats.drawn++;
+          homeStats.points += 1;
+        }
+      }
+
+      if (awayStats) {
+        awayStats.played++;
+        awayStats.goalsFor += m.awayScore;
+        awayStats.goalsAgainst += m.homeScore;
+        if (m.awayScore > m.homeScore) {
+          awayStats.won++;
+          awayStats.points += 3;
+        } else if (m.awayScore < m.homeScore) {
+          awayStats.lost++;
+        } else {
+          awayStats.drawn++;
+          awayStats.points += 1;
+        }
+      }
+    });
+
+    await this.playerStatsRepository.createQueryBuilder().delete().execute();
+
+    const newStatsEntities: PlayerStats[] = [];
+    for (const p of players) {
+      const s = statsMap.get(p.id);
+      if (s) {
+        const entity = this.playerStatsRepository.create({
+          player: p,
+          played: s.played,
+          won: s.won,
+          drawn: s.drawn,
+          lost: s.lost,
+          goalsFor: s.goalsFor,
+          goalsAgainst: s.goalsAgainst,
+          goalDifference: s.goalsFor - s.goalsAgainst,
+          points: s.points,
+          lastUpdated: new Date()
+        });
+        newStatsEntities.push(entity);
+      }
+    }
+
+    await this.playerStatsRepository.save(newStatsEntities);
+
+    return this.playerStatsRepository.find({
+      order: { points: 'DESC', goalDifference: 'DESC', goalsFor: 'DESC' }
+    });
   }
 }

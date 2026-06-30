@@ -46,7 +46,9 @@ import {
   History,
   Edit,
   Delete,
-  AutoFixHigh
+  AutoFixHigh,
+  Archive,
+  Unarchive
 } from '@mui/icons-material';
 
 interface TabPanelProps {
@@ -75,7 +77,7 @@ function TabPanel(props: TabPanelProps) {
 import type { AuthUser } from '../types/auth';
 
 interface TournamentDetailsProps {
-  currentUser: AuthUser | null;
+  currentUser?: AuthUser | null;
 }
 
 export default function TournamentDetails({ currentUser }: TournamentDetailsProps) {
@@ -150,6 +152,12 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
     fetchTournament();
   };
 
+  const handleToggleArchive = async () => {
+    if (!tournament) return;
+    await tournamentsApi.archive(tournament.id, !tournament.isArchived);
+    fetchTournament();
+  };
+
   const handleAddGoal = async (matchId: number, side: 'home' | 'away') => {
     await matchesApi.addGoal(matchId, side);
     fetchTournament();
@@ -218,19 +226,34 @@ export default function TournamentDetails({ currentUser }: TournamentDetailsProp
               <Stack direction="row" spacing={1}>
                 <Chip label={tournament.type} size="small" color="primary" variant="outlined" sx={{ textTransform: 'capitalize' }} />
                 <Chip label={tournament.status} size="small" variant="filled" />
+                {tournament.isArchived && (
+                  <Chip label="Archived" size="small" color="warning" variant="filled" />
+                )}
               </Stack>
             </Box>
-            {tournament.matches.length === 0 && currentUser?.isAdmin && (
-              <Button 
-                variant="contained" 
-                color="success" 
-                startIcon={<PlayArrow />} 
-                onClick={handleGenerateSchedule}
-                disabled={!isScheduleGeneratable()}
-              >
-                Generate Schedule
-              </Button>
-            )}
+            <Stack direction="row" spacing={1}>
+              {tournament.matches.length === 0 && currentUser?.isAdmin && (
+                <Button 
+                  variant="contained" 
+                  color="success" 
+                  startIcon={<PlayArrow />} 
+                  onClick={handleGenerateSchedule}
+                  disabled={!isScheduleGeneratable()}
+                >
+                  Generate Schedule
+                </Button>
+              )}
+              {currentUser?.isAdmin && (
+                <Button
+                  variant="outlined"
+                  color={tournament.isArchived ? "info" : "warning"}
+                  startIcon={tournament.isArchived ? <Unarchive /> : <Archive />}
+                  onClick={handleToggleArchive}
+                >
+                  {tournament.isArchived ? "Unarchive" : "Archive"}
+                </Button>
+              )}
+            </Stack>
           </Box>
         </CardContent>
       </Card>

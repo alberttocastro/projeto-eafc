@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import TournamentDetails from './TournamentDetails';
-import { tournamentsApi, playersApi } from '../api';
+import { tournamentsApi } from '../api';
 
 vi.mock('../api', () => ({
   tournamentsApi: {
@@ -33,7 +33,7 @@ describe('TournamentDetails Component', () => {
     render(
       <MemoryRouter initialEntries={['/tournament/1']}>
         <Routes>
-          <Route path="/tournament/:id" element={<TournamentDetails />} />
+          <Route path="/tournament/:id" element={<TournamentDetails currentUser={null} />} />
         </Routes>
       </MemoryRouter>
     );

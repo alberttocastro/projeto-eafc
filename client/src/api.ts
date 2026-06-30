@@ -58,6 +58,8 @@ export const playersApi = {
   create: (name: string, userId?: number) => api.post('/players', { name, userId }),
   update: (id: number, name?: string, userId?: number | null) => api.patch(`/players/${id}`, { name, userId }),
   getMyStats: () => api.get<any>('/players/me/stats'),
+  getLeaderboard: () => api.get<any[]>('/players/leaderboard'),
+  recalculateLeaderboard: () => api.post<any[]>('/players/leaderboard/recalculate'),
 };
 
 export const tournamentsApi = {

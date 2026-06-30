@@ -51,6 +51,7 @@ import {
   SportsSoccer,
   History,
   CalendarToday,
+  Leaderboard,
 } from '@mui/icons-material';
 import TournamentDetails from './components/TournamentDetails';
 import AuthDialog from './components/AuthDialog';
@@ -68,6 +69,8 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   
   // Create player form state
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -93,6 +96,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
 
   useEffect(() => {
     fetchData();
+    fetchLeaderboard();
   }, [currentUser]);
 
   const fetchData = async () => {
@@ -125,6 +129,30 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
       }
     } catch (err) {
       console.error('Error fetching dashboard data', err);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await playersApi.getLeaderboard();
+      setLeaderboard(res.data);
+    } catch (err) {
+      console.error('Error fetching leaderboard', err);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
+  const handleRecalculateLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await playersApi.recalculateLeaderboard();
+      setLeaderboard(res.data);
+    } catch (err) {
+      console.error('Error recalculating leaderboard', err);
+    } finally {
+      setLeaderboardLoading(false);
     }
   };
 
@@ -168,7 +196,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
 
   // Adjust active tab if user logs out and was on Admin tab
   useEffect(() => {
-    if ((!currentUser || !currentUser.isAdmin) && activeTab === 2) {
+    if ((!currentUser || !currentUser.isAdmin) && activeTab === 3) {
       setActiveTab(0);
     }
   }, [currentUser, activeTab]);
@@ -178,6 +206,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)}>
           <Tab icon={<BarChart />} label="My Stats" />
+          <Tab icon={<Leaderboard />} label="Global Leaderboard" />
           <Tab icon={<EmojiEvents />} label="Tournaments" />
           {currentUser?.isAdmin && <Tab icon={<AdminPanelSettings />} label="Admin Panel" />}
         </Tabs>
@@ -478,8 +507,125 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
         </Box>
       )}
 
-      {/* Tab 1: Tournaments List */}
+      {/* Tab 1: Global Leaderboard */}
       {activeTab === 1 && (
+        <Box>
+          <Card sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Grid container spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                <Grid size={{ xs: 12, sm: 8 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <Leaderboard color="primary" sx={{ fontSize: 32 }} />
+                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                      Global Leaderboard
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="textSecondary">
+                    Overall performance stats across all tournaments. Calculated once a day.
+                  </Typography>
+                  {leaderboard.length > 0 && (
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                      Cache Status: <strong>{`Last updated: ${new Date(leaderboard[0].lastUpdated).toLocaleString()}`}</strong>
+                    </Typography>
+                  )}
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }} sx={{ textAlign: { xs: 'left', sm: 'right' }, mt: { xs: 2, sm: 0 } }}>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    startIcon={<SportsSoccer />}
+                    onClick={handleRecalculateLeaderboard}
+                    disabled={leaderboardLoading}
+                  >
+                    {leaderboardLoading ? "Recalculating..." : "Recalculate Stats"}
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: 80 }}>Rank</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Player Name</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Played (P)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Won (W)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Drawn (D)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Lost (L)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>GF</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>GA</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>GD</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Points (Pts)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {leaderboardLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} align="center" sx={{ py: 8 }}>
+                      <Typography color="textSecondary">Calculating stats, please wait...</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : leaderboard.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={10} align="center" sx={{ py: 8 }}>
+                      <Typography color="textSecondary">No player statistics found.</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  leaderboard.map((row: any, index: number) => {
+                    const isGold = index === 0;
+                    const isSilver = index === 1;
+                    const isBronze = index === 2;
+                    
+                    return (
+                      <TableRow 
+                        key={row.id} 
+                        hover
+                        sx={{ 
+                          transition: 'background-color 0.2s',
+                          bgcolor: isGold ? 'rgba(255, 215, 0, 0.03)' : isSilver ? 'rgba(192, 192, 192, 0.02)' : isBronze ? 'rgba(205, 127, 50, 0.01)' : 'inherit'
+                        }}
+                      >
+                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                          {isGold ? (
+                            <Chip label="🏆 1st" size="small" sx={{ bgcolor: '#ffd700', color: '#000', fontWeight: 'bold' }} />
+                          ) : isSilver ? (
+                            <Chip label="🥈 2nd" size="small" sx={{ bgcolor: '#c0c0c0', color: '#000', fontWeight: 'bold' }} />
+                          ) : isBronze ? (
+                            <Chip label="🥉 3rd" size="small" sx={{ bgcolor: '#cd7f32', color: '#000', fontWeight: 'bold' }} />
+                          ) : (
+                            index + 1
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 'medium' }}>
+                          {row.player ? row.player.name : 'Unknown Player'}
+                        </TableCell>
+                        <TableCell align="center">{row.played}</TableCell>
+                        <TableCell align="center" sx={{ color: 'success.main' }}>{row.won}</TableCell>
+                        <TableCell align="center" sx={{ color: 'warning.main' }}>{row.drawn}</TableCell>
+                        <TableCell align="center" sx={{ color: 'error.main' }}>{row.lost}</TableCell>
+                        <TableCell align="center">{row.goalsFor}</TableCell>
+                        <TableCell align="center">{row.goalsAgainst}</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'medium', color: row.goalDifference > 0 ? 'success.main' : row.goalDifference < 0 ? 'error.main' : 'text.primary' }}>
+                          {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.05rem' }}>
+                          {row.points}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {/* Tab 2: Tournaments List */}
+      {activeTab === 2 && (
         <Grid container spacing={3}>
           {/* Create Tournament Form - Only for Admins */}
           {currentUser?.isAdmin && (
@@ -595,8 +741,8 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
         </Grid>
       )}
 
-      {/* Tab 2: Admin Panel */}
-      {activeTab === 2 && currentUser?.isAdmin && (
+      {/* Tab 3: Admin Panel */}
+      {activeTab === 3 && currentUser?.isAdmin && (
         <Grid container spacing={3}>
           {/* Players Administration */}
           <Grid size={{ xs: 12, md: 6 }}>

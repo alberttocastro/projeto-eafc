@@ -14,6 +14,16 @@ export class PlayersController {
     return this.playersService.getUserStats(user.sub);
   }
 
+  @Get('leaderboard')
+  getLeaderboard() {
+    return this.playersService.calculateAndCacheStats(false);
+  }
+
+  @Post('leaderboard/recalculate')
+  recalculateLeaderboard() {
+    return this.playersService.calculateAndCacheStats(true);
+  }
+
   @Post()
   @UseGuards(AuthGuard, AdminGuard)
   create(@Body('name') name: string, @Body('userId') userId?: number) {

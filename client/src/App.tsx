@@ -37,6 +37,16 @@ import {
   DialogActions,
   Tabs,
   Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
 } from '@mui/material';
 import { 
   EmojiEvents, 
@@ -52,6 +62,8 @@ import {
   History,
   CalendarToday,
   Leaderboard,
+  ExpandMore,
+  Archive,
 } from '@mui/icons-material';
 import TournamentDetails from './components/TournamentDetails';
 import AuthDialog from './components/AuthDialog';
@@ -71,6 +83,9 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
   const [userStats, setUserStats] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+  const activeTournaments = tournaments.filter(t => !t.isArchived);
+  const archivedTournaments = tournaments.filter(t => t.isArchived);
   
   // Create player form state
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -330,7 +345,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                               '&:hover': { transform: 'translateY(-2px)' }
                             }}>
                               <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                <Grid container alignItems="center">
+                                <Grid container sx={{ alignItems: 'center' }}>
                                   <Grid size={8}>
                                     <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontWeight: 'medium' }}>
                                       {m.tournamentName}
@@ -396,6 +411,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                           {userStats.tournaments.map((t: any, idx: number) => (
                             <Box key={t.id}>
                               <ListItem
+                                sx={t.isArchived ? { opacity: 0.7, bgcolor: 'action.hover' } : {}}
                                 secondaryAction={
                                   <Button size="small" variant="outlined" onClick={() => navigate(`/tournament/${t.id}`)}>
                                     View
@@ -403,7 +419,12 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                                 }
                               >
                                 <ListItemText 
-                                  primary={t.name}
+                                  primary={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      {t.name}
+                                      {t.isArchived && <Chip label="Archived" size="small" variant="outlined" color="warning" sx={{ height: 20, fontSize: '0.7rem' }} />}
+                                    </Box>
+                                  }
                                   secondary={`Club: ${t.clubName} • Type: ${t.type} • Status: ${t.status}`}
                                 />
                               </ListItem>
@@ -541,6 +562,7 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                       {leaderboardLoading ? "Recalculating..." : "Recalculate Stats"}
                     </Button>
                   )}
+                </Grid>
               </Grid>
             </CardContent>
           </Card>
@@ -708,13 +730,13 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
             <Typography variant="h5" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 'bold' }}>
               <EmojiEvents color="primary" /> EAFC Tournaments
             </Typography>
-            {tournaments.length === 0 ? (
-              <Card sx={{ p: 4, textAlign: 'center' }}>
-                <Typography color="textSecondary">No tournaments created yet.</Typography>
+            {activeTournaments.length === 0 ? (
+              <Card sx={{ p: 4, textAlign: 'center', mb: 3 }}>
+                <Typography color="textSecondary">No active tournaments created yet.</Typography>
               </Card>
             ) : (
-              <Grid container spacing={2}>
-                {tournaments.map(t => (
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {activeTournaments.map(t => (
                   <Grid size={{ xs: 12, sm: currentUser?.isAdmin ? 12 : 6 }} key={t.id}>
                     <Card variant="outlined">
                       <CardContent>
@@ -737,6 +759,46 @@ function Dashboard({ currentUser, onOpenLogin }: DashboardProps) {
                   </Grid>
                 ))}
               </Grid>
+            )}
+
+            {archivedTournaments.length > 0 && (
+              <Accordion sx={{ mt: 2, bgcolor: 'background.paper', borderRadius: 1, '&::before': { display: 'none' } }} variant="outlined">
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Archive color="action" fontSize="small" />
+                    <Typography variant="subtitle1" color="textSecondary" sx={{ fontWeight: 'bold' }}>
+                      Archived Tournaments ({archivedTournaments.length})
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    {archivedTournaments.map(t => (
+                      <Grid size={{ xs: 12, sm: currentUser?.isAdmin ? 12 : 6 }} key={t.id}>
+                        <Card variant="outlined" sx={{ opacity: 0.7, bgcolor: 'action.hover' }}>
+                          <CardContent>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>{t.name}</Typography>
+                            <Typography color="textSecondary" variant="body2" sx={{ textTransform: 'capitalize' }}>
+                              {t.type} • {t.status} • {t.participants?.length || 0} participants
+                            </Typography>
+                          </CardContent>
+                          <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                            <Button 
+                              variant="outlined" 
+                              size="small"
+                              color="inherit"
+                              startIcon={<PlayIcon />}
+                              onClick={() => navigate(`/tournament/${t.id}`)}
+                            >
+                              Open Details
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
             )}
           </Grid>
         </Grid>

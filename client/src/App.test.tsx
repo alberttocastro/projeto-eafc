@@ -1,10 +1,26 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import App from './App';
 import { playersApi, tournamentsApi } from './api';
 
 // Mock the APIs
 vi.mock('./api', () => ({
+  authApi: {
+    me: vi.fn().mockResolvedValue({
+      data: {
+        id: 1,
+        name: 'Admin User',
+        email: 'admin@eafc.com',
+        isAdmin: true,
+      },
+    }),
+    getUsers: vi.fn().mockResolvedValue({ data: [] }),
+  },
+  authStorage: {
+    getToken: vi.fn().mockReturnValue('dummy-token'),
+    setToken: vi.fn(),
+    clearToken: vi.fn(),
+  },
   playersApi: {
     list: vi.fn().mockResolvedValue({ data: [] }),
     create: vi.fn(),
@@ -23,21 +39,14 @@ vi.mock('./api', () => ({
         },
         tournaments: [],
         matches: [],
-      }
+      },
     }),
+    getLeaderboard: vi.fn().mockResolvedValue({ data: [] }),
+    recalculateLeaderboard: vi.fn().mockResolvedValue({ data: [] }),
   },
   tournamentsApi: {
     list: vi.fn().mockResolvedValue({ data: [] }),
     create: vi.fn(),
-  },
-  authApi: {
-    getUsers: vi.fn().mockResolvedValue({ data: [] }),
-    me: vi.fn().mockResolvedValue({ data: { id: 1, name: 'Admin User', email: 'admin@test.com', isAdmin: true } }),
-  },
-  authStorage: {
-    getToken: vi.fn().mockReturnValue('mock-token'),
-    getUser: vi.fn().mockReturnValue({ id: 1, name: 'Admin User', email: 'admin@test.com', isAdmin: true }),
-    clearToken: vi.fn(),
   },
 }));
 
@@ -46,41 +55,32 @@ describe('App Component', () => {
     render(<App />);
     expect(screen.getByText(/EAFC Manager/i)).toBeInTheDocument();
     
-    // Wait for the async API calls to resolve so the warnings don't leak
+    // Wait for the async API calls to resolve
     await waitFor(() => {
-      expect(playersApi.list).toHaveBeenCalled();
+      expect(playersApi.getMyStats).toHaveBeenCalled();
       expect(tournamentsApi.list).toHaveBeenCalled();
     });
   });
 
   it('renders Players and New Tournament sections', async () => {
     render(<App />);
+
+    // Wait for initial stats load
+    await waitFor(() => {
+      expect(playersApi.getMyStats).toHaveBeenCalled();
+    });
+
+    // 1. Check Tournaments Tab
+    const tournamentsTab = screen.getByText('Tournaments');
+    fireEvent.click(tournamentsTab);
     
-    // Switch to Tournaments tab to see tournaments and creation form
-    await waitFor(() => {
-      const tournamentsTab = screen.getByRole('tab', { name: /Tournaments/i });
-      expect(tournamentsTab).toBeInTheDocument();
-      tournamentsTab.click();
-    });
+    expect(screen.getByText('New Tournament', { selector: 'h6' })).toBeInTheDocument();
+    expect(screen.getByText('EAFC Tournaments')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('New Tournament', { selector: 'h6' })).toBeInTheDocument();
-      expect(screen.getByText('EAFC Tournaments')).toBeInTheDocument();
-    });
-
-    // Switch to Admin Panel tab to see player administration
-    await waitFor(() => {
-      const adminTab = screen.getByRole('tab', { name: /Admin Panel/i });
-      expect(adminTab).toBeInTheDocument();
-      adminTab.click();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Players Administration', { selector: 'h6' })).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(playersApi.list).toHaveBeenCalled();
-    });
+    // 2. Check Admin Panel Tab
+    const adminPanelTab = screen.getByText('Admin Panel');
+    fireEvent.click(adminPanelTab);
+    
+    expect(screen.getByText('Players Administration', { selector: 'h6' })).toBeInTheDocument();
   });
 });

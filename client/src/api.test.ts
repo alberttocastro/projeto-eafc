@@ -54,6 +54,11 @@ describe('API', () => {
       tournamentsApi.create(data);
       expect(api.post).toHaveBeenCalledWith('/tournaments', data);
     });
+
+    it('archive should call PATCH /tournaments/:id/archive', () => {
+      tournamentsApi.archive(1, true);
+      expect(api.patch).toHaveBeenCalledWith('/tournaments/1/archive', { isArchived: true });
+    });
   });
 
   describe('matchesApi', () => {

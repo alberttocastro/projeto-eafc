@@ -76,6 +76,7 @@ export const tournamentsApi = {
     api.post(`/tournaments/${id}/auto-assign-groups`),
   generateSchedule: (id: number) => api.post(`/tournaments/${id}/generate-schedule`),
   getStandings: (id: number) => api.get(`/tournaments/${id}/standings`),
+  archive: (id: number, isArchived: boolean) => api.patch(`/tournaments/${id}/archive`, { isArchived }),
 };
 
 export const matchesApi = {

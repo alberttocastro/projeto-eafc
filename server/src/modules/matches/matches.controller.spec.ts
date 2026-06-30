@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MatchesController } from './matches.controller';
 import { MatchesService } from './matches.service';
 import { MatchStatus } from '../../entities/match.entity';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 describe('MatchesController', () => {
   let controller: MatchesController;
@@ -24,7 +26,11 @@ describe('MatchesController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MatchesController],
-      providers: [MatchesService],
+      providers: [
+        MatchesService,
+        { provide: JwtService, useValue: {} },
+        { provide: ConfigService, useValue: {} },
+      ],
     })
       .overrideProvider(MatchesService)
       .useValue(mockMatchesService)

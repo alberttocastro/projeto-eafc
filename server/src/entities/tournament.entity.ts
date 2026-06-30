@@ -38,6 +38,9 @@ export class Tournament {
   @Column({ default: false })
   isDoubleRound: boolean; // Only for LEAGUE type or Group Stage
 
+  @Column({ default: false })
+  isArchived: boolean;
+
   // Cup Configuration
   @Column({ nullable: true })
   groupCount: number;
